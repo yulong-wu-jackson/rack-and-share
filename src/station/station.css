@@ -1,0 +1,602 @@
+.station {
+  --status-height: 250px;
+  --strip-height: 76px;
+  --soft: #e6ebf2;
+  --muted: #4a5a76;
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 19px;
+  background: var(--white);
+  color: var(--ink);
+}
+
+.station svg {
+  flex: none;
+}
+
+/* Status: the one place that says whether to approach. */
+
+.status {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--status-height);
+  padding: 0 34px 0 30px;
+  overflow: hidden;
+  color: var(--state-ink);
+  transition:
+    height 420ms var(--ease-out),
+    color 300ms;
+}
+
+.status-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--state);
+}
+
+.status-wipe {
+  animation: status-wipe 620ms var(--ease-out) both;
+}
+
+@keyframes status-wipe {
+  from {
+    clip-path: circle(0% at 82% 50%);
+  }
+  to {
+    clip-path: circle(140% at 82% 50%);
+  }
+}
+
+.status-text,
+.status-id {
+  position: relative;
+}
+
+.status-text {
+  animation: status-in 520ms var(--ease-out) both;
+}
+
+/* The rack's own mark: its number, and a barbell that follows the real bar. */
+.status-id {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 26px;
+}
+
+.status-rack {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+@keyframes status-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+.status-word {
+  font-family: var(--font-display);
+  font-size: 100px;
+  font-weight: 700;
+  line-height: 0.92;
+  letter-spacing: -0.03em;
+  transition: font-size 420ms var(--ease-out);
+}
+
+.status-line {
+  margin-top: 12px;
+  font-size: 27px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* The sensor on the hooks reads the bar's height; the barbell moves with it. */
+.status-bar {
+  width: 180px;
+  transform: translateY(calc(var(--bar, 0) * 26px));
+}
+
+.station[data-compact] .status {
+  height: var(--strip-height);
+}
+
+.station[data-compact] .status-id {
+  display: none;
+}
+
+.station[data-compact] .status-text {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+}
+
+.station[data-compact] .status-word {
+  font-size: 38px;
+}
+
+.station[data-compact] .status-line {
+  margin-top: 0;
+  font-size: 21px;
+}
+
+/* Tray */
+
+.tray {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 18px 30px 20px;
+}
+
+.tray-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.time {
+  font-family: var(--font-display);
+  font-size: 35px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+}
+
+.sets {
+  margin-top: 2px;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.chips,
+.waiters,
+.guide,
+.rules,
+.chapters {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 13px 0 11px;
+  border-radius: 17px;
+  background: var(--soft);
+  font-size: 16px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Mid-set, only the sharing tag stays, without a pill, so it cannot read as an invitation. */
+.chips[data-dim] .chip {
+  padding-inline: 0;
+  background: none;
+  color: var(--muted);
+}
+
+.chip svg {
+  width: 17px;
+  height: 17px;
+}
+
+/* Pinned to the corner so the button stays put as the line grows under it. */
+.line {
+  position: absolute;
+  top: 18px;
+  right: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.waiters {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.waiter {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding-left: 11px;
+  border-radius: 17px;
+  background: var(--soft);
+  font-size: 16px;
+  font-weight: 700;
+  animation: waiter-in 420ms var(--ease-out) both;
+}
+
+.waiter[data-status='sharing'] {
+  background: var(--go);
+}
+
+.waiter svg {
+  width: 17px;
+  height: 17px;
+}
+
+.waiter button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  opacity: 0.55;
+}
+
+.waiter button:hover {
+  opacity: 1;
+}
+
+@keyframes waiter-in {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+
+.tray-links {
+  display: flex;
+  gap: 10px;
+}
+
+/* Buttons */
+
+.button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition:
+    transform 160ms var(--ease-out),
+    background 160ms;
+}
+
+.button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.button-ink {
+  height: 60px;
+  padding: 0 28px;
+  border-radius: 18px;
+  background: var(--ink);
+  color: var(--white);
+  font-size: 21px;
+}
+
+.button-ink:hover:not(:disabled) {
+  background: #22345a;
+}
+
+.button-ink:disabled {
+  opacity: 0.35;
+}
+
+.button-quiet,
+.button-end {
+  height: 46px;
+  padding: 0 18px 0 15px;
+  border-radius: 14px;
+  background: var(--soft);
+  font-size: 17px;
+}
+
+.button-quiet:hover {
+  background: #d8dfe9;
+}
+
+.button-quiet svg {
+  width: 20px;
+  height: 20px;
+}
+
+.button-end {
+  padding-inline: 18px;
+  background: none;
+  box-shadow: inset 0 0 0 2px var(--soft);
+}
+
+.button-end:hover {
+  background: var(--soft);
+}
+
+/* Sheets */
+
+.sheet {
+  position: absolute;
+  inset: var(--strip-height) 0 0;
+  display: flex;
+  flex-direction: column;
+  padding: 18px 30px 24px;
+  background: var(--white);
+  opacity: 0;
+  transform: translateY(40px);
+  transition:
+    transform 420ms var(--ease-out),
+    opacity 200ms;
+}
+
+.sheet[data-open] {
+  opacity: 1;
+  transform: none;
+}
+
+.sheet-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.sheet-head h3 {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.sheet-close {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin-right: -6px;
+  border-radius: 50%;
+  background: var(--soft);
+}
+
+.sheet-close:hover {
+  background: #d8dfe9;
+}
+
+.guide {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.guide li {
+  display: flex;
+  flex-direction: column;
+}
+
+.guide .guide-art {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border-radius: 16px;
+  background: var(--paper);
+}
+
+.guide p {
+  display: flex;
+  flex: none;
+  gap: 10px;
+  min-height: 68px;
+  margin-top: 12px;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.guide-number {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  margin-top: -1px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--white);
+  font-size: 15px;
+}
+
+.art-person {
+  color: var(--ink);
+}
+
+.art-person path {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.art-person .art-solid {
+  fill: currentColor;
+}
+
+.art-steel {
+  fill: #c3ccd9;
+}
+
+.art-bar {
+  stroke: #7b8aa3;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+}
+
+.art-plate {
+  fill: #7b8aa3;
+}
+
+.art-mark {
+  fill: var(--blue);
+}
+
+.art-guide {
+  stroke: var(--blue);
+  stroke-width: 2;
+  stroke-dasharray: 2 6;
+  stroke-linecap: round;
+}
+
+.rules {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-evenly;
+}
+
+.rules li {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 500;
+}
+
+.rules svg {
+  width: 56px;
+  height: 56px;
+  padding: 14px;
+  border-radius: 50%;
+  background: var(--soft);
+}
+
+.choices {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.choice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 24px;
+  border-radius: 22px;
+  background: var(--soft);
+  text-align: left;
+  transition:
+    transform 160ms var(--ease-out),
+    background 160ms;
+}
+
+.choice:hover:not(:disabled) {
+  background: #d8dfe9;
+}
+
+.choice:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.choice:disabled {
+  opacity: 0.45;
+}
+
+.choice svg {
+  width: 60px;
+  height: 60px;
+  stroke-width: 1.6;
+  margin-bottom: auto;
+}
+
+.choice strong {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.choice span {
+  margin-top: 2px;
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.guest {
+  --switch-off: #c3ccd9;
+
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.guest-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 84px;
+  border-bottom: 2px solid var(--soft);
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stepper button {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--soft);
+}
+
+.stepper button:disabled {
+  opacity: 0.35;
+}
+
+.stepper output {
+  width: 54px;
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.guest .button {
+  align-self: flex-end;
+  width: 220px;
+  margin-top: auto;
+}

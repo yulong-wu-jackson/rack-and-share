@@ -1,0 +1,55 @@
+:root {
+  /* Brand */
+  --ink: #152238;
+  --night: #0b111e;
+  --blue: #007fa3;
+  --sky: #6fc7ea;
+  --paper: #f2f4f7;
+  --white: #ffffff;
+
+  /* Rack states */
+  --hold: #ef6a4c;
+  --go: #45d496;
+  --idle: #c5cedb;
+
+  /* People */
+  --marcus: #f2f4f7;
+  --maya: #ffc857;
+
+  /* Stage */
+  --wall: #0b111e;
+  --floor: #111a2c;
+  --steel: #3b4a66;
+  --steel-light: #8a99b3;
+  --line: rgb(255 255 255 / 0.1);
+  --text: #f2f4f7;
+  --text-soft: #a9b4c7;
+
+  --font-display: 'Outfit Variable', 'Outfit', system-ui, sans-serif;
+  --font-ui: 'Manrope Variable', 'Manrope', system-ui, sans-serif;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* The rack's state colours everything that glows on the stage. */
+[data-status='free'],
+[data-status='your-turn'] {
+  --state: var(--blue);
+  --state-ink: var(--white);
+}
+
+[data-status='mid-set'] {
+  --state: var(--hold);
+  --state-ink: var(--ink);
+}
+
+[data-status='resting-open'] {
+  --state: var(--go);
+  --state-ink: var(--ink);
+}
+
+[data-status='resting-closed'] {
+  --state: var(--idle);
+  --state-ink: var(--ink);
+}

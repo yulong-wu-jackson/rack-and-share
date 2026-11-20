@@ -1,0 +1,39 @@
+[tools]
+node = "26"
+pnpm = "12"
+
+[tasks.install]
+description = "Install dependencies"
+run = "pnpm install"
+
+[tasks.dev]
+description = "Start the dev server"
+run = "pnpm dev"
+
+[tasks.build]
+description = "Type-check and build for production"
+run = "pnpm build"
+
+[tasks.preview]
+description = "Serve the production build"
+run = "pnpm preview"
+
+[tasks.lint]
+description = "Lint and check formatting"
+run = "pnpm lint"
+
+[tasks.format]
+description = "Format and apply safe lint fixes"
+run = "pnpm format"
+
+[tasks.typecheck]
+description = "Type-check without emitting"
+run = "pnpm typecheck"
+
+[tasks.test]
+description = "Run unit tests"
+run = "pnpm test"
+
+[tasks.check]
+description = "Lint, type-check and test"
+depends = ["lint", "typecheck", "test"]
