@@ -1,0 +1,185 @@
+.scene {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.glow-core {
+  stop-color: var(--state);
+  stop-opacity: 0.42;
+  transition: stop-color 500ms;
+}
+
+.glow-edge {
+  stop-color: var(--state);
+  stop-opacity: 0;
+  transition: stop-color 500ms;
+}
+
+.glow {
+  fill: url(#screen-glow);
+}
+
+.floor-glow {
+  fill: var(--state);
+  opacity: 0.35;
+  filter: blur(5px);
+  transition: fill 500ms;
+}
+
+/* Ties the small screen on the rack to its close-up below the scene. */
+.tether {
+  stroke: var(--state);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-dasharray: 0.1 7;
+  transition: stroke 500ms;
+}
+
+.steel {
+  fill: var(--steel);
+}
+
+.steel-light {
+  fill: var(--steel-light);
+}
+
+.holes {
+  stroke: var(--wall);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-dasharray: 0.1 8.9;
+}
+
+.mount {
+  stroke: var(--steel);
+  stroke-width: 4;
+}
+
+.bar {
+  stroke: #d3dae6;
+  stroke-width: 3.6;
+  stroke-linecap: round;
+}
+
+.plate {
+  fill: #5b6d92;
+}
+
+.plate-small {
+  fill: #7586a8;
+}
+
+.collar {
+  fill: #d3dae6;
+}
+
+.screen-bezel {
+  fill: #04070d;
+}
+
+.screen-face,
+.sensor {
+  fill: var(--state);
+  transition: fill 400ms;
+}
+
+.screen-word {
+  fill: var(--state-ink);
+  opacity: 0.9;
+}
+
+.screen-tray {
+  fill: var(--paper);
+  opacity: 0;
+  transition: opacity 300ms;
+}
+
+.screen[data-occupied] .screen-tray {
+  opacity: 1;
+}
+
+.sensor-pulse {
+  fill: var(--white);
+  animation: sensor-travel 460ms var(--ease-out) both;
+}
+
+@keyframes sensor-travel {
+  from {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+  to {
+    transform: translate(var(--dx), var(--dy));
+    opacity: 0;
+  }
+}
+
+.nfc-rings circle {
+  fill: none;
+  stroke: var(--white);
+  stroke-width: 2;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: nfc-ring 900ms var(--ease-out) both;
+}
+
+.nfc-rings circle:last-child {
+  animation-delay: 180ms;
+}
+
+@keyframes nfc-ring {
+  from {
+    transform: scale(0.3);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+.gaze {
+  stroke: var(--maya);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 1 8;
+  opacity: 0;
+  transition: opacity 400ms;
+  animation: gaze-march 900ms linear infinite;
+}
+
+.gaze[data-on] {
+  opacity: 0.9;
+}
+
+@keyframes gaze-march {
+  to {
+    stroke-dashoffset: 18;
+  }
+}
+
+.figure path {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.figure .figure-torso,
+.figure-fill {
+  fill: currentColor;
+}
+
+.figure-shadow {
+  fill: rgb(0 0 0 / 0.45);
+}
+
+.figure-marcus {
+  color: var(--marcus);
+}
+
+.figure-maya {
+  color: var(--maya);
+}

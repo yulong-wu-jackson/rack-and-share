@@ -1,0 +1,396 @@
+.viewport {
+  display: grid;
+  place-items: center;
+  min-height: 100%;
+  overflow: hidden;
+}
+
+.viewport[data-layout='portrait'] {
+  place-items: start center;
+  overflow: clip;
+}
+
+.stage-fit {
+  position: relative;
+}
+
+.stage {
+  --floor-y: 316px;
+
+  position: relative;
+  width: 1440px;
+  height: 860px;
+  transform-origin: 0 0;
+}
+
+/* The gym floor runs past the stage edges so the room fills any window. */
+.stage::before {
+  content: '';
+  position: absolute;
+  inset: var(--floor-y) -3000px -3000px;
+  border-top: 1px solid rgb(255 255 255 / 0.13);
+  background: linear-gradient(to bottom, var(--floor), var(--wall) 520px);
+}
+
+.topbar,
+.scene-band,
+.narration,
+.device,
+.nfc-contact,
+.touch {
+  position: absolute;
+}
+
+/* Top bar */
+
+.topbar {
+  inset: 0 117px auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+}
+
+.brand {
+  height: 24px;
+}
+
+.controls,
+.transport {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.transport {
+  gap: 10px;
+}
+
+.icon-button {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: var(--text-soft);
+  transition:
+    background 160ms,
+    color 160ms;
+}
+
+.icon-button:hover {
+  background: rgb(255 255 255 / 0.1);
+  color: var(--text);
+}
+
+.icon-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+.chapters {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A thin bar inside a taller hit area. */
+.chapter {
+  display: block;
+  width: 26px;
+  height: 40px;
+  padding: 0 2px;
+  background: rgb(255 255 255 / 0.2);
+  background-clip: content-box;
+  mask: linear-gradient(#000 0 0) center / 100% 4px no-repeat;
+  transition: background-color 200ms;
+}
+
+.chapter:hover {
+  background-color: rgb(255 255 255 / 0.55);
+}
+
+.chapter[data-state='done'] {
+  background-color: var(--text-soft);
+}
+
+.chapter[data-state='current'] {
+  background-color: var(--white);
+}
+
+.mode-switch {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 21px;
+  background: rgb(255 255 255 / 0.1);
+}
+
+.mode-switch button {
+  height: 36px;
+  padding: 0 18px;
+  border-radius: 18px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-soft);
+  transition:
+    background 200ms,
+    color 200ms;
+}
+
+.mode-switch button:hover {
+  color: var(--text);
+}
+
+.mode-switch button[aria-pressed='true'] {
+  background: var(--white);
+  color: var(--ink);
+}
+
+/* Scene and narration */
+
+.scene-band {
+  top: 64px;
+  left: 0;
+  width: 1440px;
+  height: 266px;
+}
+
+.narration {
+  top: 112px;
+  left: 117px;
+  width: 300px;
+}
+
+.caption {
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  animation: caption-in 520ms var(--ease-out) both;
+}
+
+@keyframes caption-in {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateY(10px);
+  }
+}
+
+/* The one control that stands for something done in the gym, not on a screen. */
+.world-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 52px;
+  margin-top: 20px;
+  padding: 0 22px 0 18px;
+  border-radius: 26px;
+  background: var(--white);
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 800;
+  box-shadow: 0 10px 30px -8px rgb(0 0 0 / 0.6);
+  transition:
+    transform 180ms var(--ease-out),
+    background 160ms,
+    opacity 160ms;
+}
+
+.world-action:hover:not(:disabled) {
+  background: var(--sky);
+}
+
+.world-action:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.world-action:disabled {
+  opacity: 0.5;
+}
+
+.world-action svg {
+  width: 21px;
+  height: 21px;
+}
+
+/* Devices */
+
+.device {
+  background: #04070d;
+  box-shadow:
+    inset 0 0 0 1.5px #2b3855,
+    0 36px 70px -28px rgb(0 0 0 / 0.9);
+}
+
+.device[data-locked] {
+  cursor: pointer;
+}
+
+.device[data-locked] > * {
+  pointer-events: none;
+}
+
+.tablet {
+  top: 352px;
+  left: 117px;
+  width: 780px;
+  height: 488px;
+  padding: 12px;
+  border-radius: 30px;
+  /* The screen's colour spills onto the floor under it. */
+  box-shadow:
+    inset 0 0 0 1.5px #2b3855,
+    0 36px 70px -28px rgb(0 0 0 / 0.9),
+    0 30px 90px -18px color-mix(in srgb, var(--state) 55%, transparent);
+  transition: box-shadow 600ms;
+}
+
+.phone {
+  top: 140px;
+  left: 983px;
+  z-index: 2;
+  width: 340px;
+  height: 700px;
+  padding: 10px;
+  border-radius: 52px;
+  transition:
+    opacity 700ms,
+    filter 700ms,
+    translate 900ms var(--ease-out);
+}
+
+/* Its owner has left the gym floor, so the phone steps out of the picture. */
+.phone[data-away] {
+  opacity: 0.22;
+  filter: saturate(0.4);
+  translate: 0 36px;
+}
+
+/* Rings where the phone meets the station. */
+.nfc-contact {
+  top: 596px;
+  left: 897px;
+  z-index: 3;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.nfc-contact::before,
+.nfc-contact::after {
+  content: '';
+  position: absolute;
+  inset: -34px;
+  border: 3px solid var(--white);
+  border-radius: 50%;
+  animation: contact-ring 900ms var(--ease-out) both;
+}
+
+.nfc-contact::after {
+  animation-delay: 160ms;
+}
+
+@keyframes contact-ring {
+  from {
+    opacity: 0.95;
+    transform: scale(0.2);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.6);
+  }
+}
+
+/* Fingertips shown while the story plays */
+
+.touch {
+  z-index: 4;
+  width: 46px;
+  height: 46px;
+  margin: -23px 0 0 -23px;
+  border: 3px solid var(--finger);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--finger) 30%, transparent);
+  box-shadow: 0 6px 16px -4px rgb(0 0 0 / 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(1.5);
+  transition:
+    left 600ms var(--ease-out),
+    top 600ms var(--ease-out),
+    opacity 300ms,
+    transform 300ms var(--ease-out);
+}
+
+.touch-marcus {
+  --finger: var(--marcus);
+}
+
+.touch-maya {
+  --finger: var(--maya);
+}
+
+.touch[data-on] {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.touch[data-pressed] {
+  background: color-mix(in srgb, var(--finger) 75%, transparent);
+  transform: scale(0.72);
+  transition-duration: 600ms, 600ms, 300ms, 120ms;
+}
+
+/* Portrait: the same pieces, stacked */
+
+[data-layout='portrait'] .stage {
+  --floor-y: 446px;
+
+  width: 820px;
+  height: 1716px;
+}
+
+[data-layout='portrait'] .topbar {
+  inset-inline: 24px;
+}
+
+[data-layout='portrait'] .narration {
+  top: 78px;
+  left: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  width: 772px;
+  height: 100px;
+}
+
+[data-layout='portrait'] .world-action {
+  flex: none;
+  margin-top: 0;
+}
+
+[data-layout='portrait'] .scene-band {
+  top: 194px;
+  left: -230px;
+}
+
+[data-layout='portrait'] .tablet {
+  top: 480px;
+  left: 20px;
+}
+
+[data-layout='portrait'] .phone {
+  top: 996px;
+  left: 240px;
+}
+
+[data-layout='portrait'] .nfc-contact {
+  top: 968px;
+  left: 410px;
+}

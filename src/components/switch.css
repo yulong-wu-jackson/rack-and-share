@@ -1,0 +1,27 @@
+.switch {
+  flex: none;
+  width: 52px;
+  height: 32px;
+  padding: 3px;
+  border-radius: 16px;
+  background: var(--switch-off, rgb(255 255 255 / 0.18));
+  transition: background 200ms;
+}
+
+.switch-knob {
+  display: block;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--white);
+  box-shadow: 0 2px 5px rgb(0 0 0 / 0.3);
+  transition: transform 260ms var(--ease-out);
+}
+
+.switch[aria-checked='true'] {
+  background: var(--switch-on, var(--go));
+}
+
+.switch[aria-checked='true'] .switch-knob {
+  transform: translateX(20px);
+}
