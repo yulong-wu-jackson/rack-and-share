@@ -8,7 +8,7 @@ Live demo: https://yulong-wu-jackson.github.io/rack-and-share/
 
 ![The floor board by the gym door](docs/screenshots/try-board.png)
 
-The demo opens on the floor board, a screen by the gym door that shows every rack's station at once. Each tile uses the station's colours: blue for free, red for mid-set, green for resting and open to work in, grey for resting and not sharing. A line at the bottom suggests where a newcomer should go. Racks you have not visited keep running their own workouts, so the board changes while you watch.
+The demo opens on the floor board, a screen by the gym door that shows every rack's station at once. Each tile uses the station's colours: blue for free, red for mid-set, green for resting and open to work in, grey for resting and not sharing. A line at the bottom suggests where a newcomer should go. The other lifters keep running their own workouts, so the board changes while you watch.
 
 Tap a rack and the board zooms into it. Up close the page shows three things at once.
 
@@ -16,7 +16,7 @@ Tap a rack and the board zooms into it. Up close the page shows three things at 
 - The station: the screen mounted on the rack.
 - The phone: the lifter's app.
 
-"All racks" in the top bar, or Escape, zooms back out to the board. A rack you have visited waits for you as you left it.
+"All racks" in the top bar, or Escape, zooms back out to the board. A rack where you started a session waits for you as you left it. Your phone checks in on one rack at a time.
 
 It has two modes.
 
