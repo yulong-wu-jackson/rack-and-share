@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  activeTags,
   answerWorkIn,
   checkIn,
   endSession,
+  GUEST_DEFAULT_TAGS,
   initialRack,
   joinLine,
   liftBar,
@@ -14,6 +16,7 @@ import {
   setTag,
   startGuest,
   timeLine,
+  updateGuestSettings,
 } from './model';
 
 const threeSets = setSets(checkIn(initialRack), 3);
@@ -45,7 +48,37 @@ describe('status', () => {
     expect(rackStatus(threeSets)).toBe('resting-open');
     expect(rackStatus(liftBar(threeSets))).toBe('mid-set');
     expect(rackStatus(setTag(threeSets, 'workIn', false))).toBe('resting-closed');
-    expect(rackStatus(startGuest(initialRack, 3, false))).toBe('resting-closed');
+    expect(rackStatus(startGuest(initialRack, 3, { ...GUEST_DEFAULT_TAGS, workIn: false }))).toBe(
+      'resting-closed',
+    );
+  });
+
+  it('keeps guest tags in the active session and separate from the phone profile', () => {
+    const profile = setTag(threeSets, 'questions', true);
+    const guestTags = {
+      experience: 'beginner',
+      workIn: false,
+      spot: true,
+      questions: false,
+    } as const;
+    const guest = startGuest(endSession(profile), 3, guestTags);
+
+    expect(activeTags(guest)).toEqual(guestTags);
+    expect(activeTags(checkIn(endSession(guest)))).toEqual(profile.tags);
+    expect(activeTags(startGuest(endSession(guest), 3))).toEqual(GUEST_DEFAULT_TAGS);
+  });
+
+  it('updates an active guest without restarting the set or losing the waiting line', () => {
+    const lifting = liftBar(joinLine(startGuest(initialRack, 3), 'work-in'));
+    const tags = { ...GUEST_DEFAULT_TAGS, workIn: false, spot: true };
+    const edited = updateGuestSettings(lifting, 4, tags);
+
+    expect(rackStatus(edited)).toBe('mid-set');
+    expect(setsLine(edited.session!)).toBe('4 sets after this one');
+    expect(rackStatus(rackBar(edited))).toBe('resting-closed');
+    expect(activeTags(edited)).toEqual(tags);
+    expect(edited.waiters).toEqual([{ id: lifting.waiters[0].id, status: 'queued' }]);
+    expect(updateGuestSettings(threeSets, 4, tags)).toBe(threeSets);
   });
 });
 
@@ -69,7 +102,7 @@ describe('waiting line', () => {
     const ended = endSession(joinLine(joinLine(threeSets, 'work-in'), 'turn'));
     expect(rackStatus(ended)).toBe('your-turn');
 
-    const next = startGuest(ended, 3, true);
+    const next = startGuest(ended, 3);
     expect(next.waiters).toHaveLength(1);
     expect(next.session?.by).toBe('guest');
   });

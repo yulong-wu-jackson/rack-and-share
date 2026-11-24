@@ -3,18 +3,10 @@ import type { Experience, Rack, ToggleTag, WaitKind } from './model';
 import * as model from './model';
 
 export type Mode = 'watch' | 'try';
-export type Sheet = 'guide' | 'rules' | 'wait' | 'guest';
+export type Sheet = 'guide' | 'rules' | 'wait' | 'guest' | 'guest-edit';
 export type Persona = 'marcus' | 'maya';
 export type PhoneScreen = 'setup' | 'ready' | 'session';
 export type Spot = 'rack' | 'front' | 'station' | 'near' | 'side' | 'away';
-
-export interface Toast {
-  id: number;
-  /** The count the lifter just set. */
-  sets: number;
-  /** The count before this run of changes, restored by Undo. */
-  undoTo: number;
-}
 
 export interface Touch {
   x: number;
@@ -27,7 +19,7 @@ export interface AppState {
   name: string;
   tagsSaved: boolean;
   sheet: Sheet | null;
-  toast: Toast | null;
+  draftSets: number | null;
 
   mode: Mode;
   playing: boolean;
@@ -59,7 +51,7 @@ function initialState(mode: Mode): AppState {
     name: 'Marcus',
     tagsSaved: watching,
     sheet: null,
-    toast: null,
+    draftSets: null,
     mode,
     playing: watching,
     chapter: 0,
@@ -128,24 +120,34 @@ export const actions = {
       nfcPulse: state.nfcPulse + 1,
     }));
   },
-  startGuest(sets: number, workIn: boolean): void {
+  startGuest(sets: number, tags?: model.Tags): void {
     set((state) => ({
-      rack: model.startGuest(state.rack, sets, workIn),
+      rack: model.startGuest(state.rack, sets, tags),
       atRack: 'maya',
       sheet: null,
     }));
   },
+  updateGuestSettings(sets: number, tags: model.Tags): void {
+    set((state) => ({ rack: model.updateGuestSettings(state.rack, sets, tags), sheet: null }));
+  },
   endSession(): void {
-    set((state) => ({ rack: model.endSession(state.rack), toast: null }));
+    set((state) => ({
+      rack: model.endSession(state.rack),
+      draftSets: null,
+      sheet: state.sheet === 'guest-edit' ? null : state.sheet,
+    }));
   },
 
   liftBar(): void {
-    // The count drops with the lift, so a toast about the old count would contradict it.
-    set((state) => ({
-      rack: model.liftBar(state.rack),
-      toast: null,
-      sensorPulse: state.sensorPulse + 1,
-    }));
+    set((state) => {
+      const rack = model.liftBar(state.rack);
+      // A new set makes the unconfirmed count stale.
+      return {
+        rack,
+        draftSets: rack === state.rack ? state.draftSets : null,
+        sensorPulse: state.sensorPulse + 1,
+      };
+    });
   },
   rackBar(): void {
     set((state) => ({
@@ -157,23 +159,23 @@ export const actions = {
   adjustSets(delta: number): void {
     set((state) => {
       const session = state.rack.session;
-      if (!session) return state;
-      const sets = Math.min(model.MAX_SETS, Math.max(0, session.setsLeft + delta));
-      if (sets === session.setsLeft) return state;
-      const undoTo = state.toast?.undoTo ?? session.setsLeft;
-      return {
-        rack: model.setSets(state.rack, sets),
-        toast: { id: (state.toast?.id ?? 0) + 1, sets, undoTo },
-      };
+      if (session?.by !== 'phone') return state;
+      const sets = Math.min(
+        model.MAX_SETS,
+        Math.max(0, (state.draftSets ?? session.setsLeft) + delta),
+      );
+      return { draftSets: sets === session.setsLeft ? null : sets };
     });
   },
-  undoSets(): void {
+  confirmSets(): void {
     set((state) =>
-      state.toast ? { rack: model.setSets(state.rack, state.toast.undoTo), toast: null } : state,
+      state.draftSets === null
+        ? state
+        : { rack: model.setSets(state.rack, state.draftSets), draftSets: null },
     );
   },
-  dismissToast(id: number): void {
-    set((state) => (state.toast?.id === id ? { toast: null } : state));
+  undoSets(): void {
+    set({ draftSets: null });
   },
 
   joinLine(kind: WaitKind): void {

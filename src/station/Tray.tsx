@@ -1,19 +1,20 @@
 import {
-  ArrowLeftRight,
-  Ban,
   BookOpen,
+  Clock,
   HandHelping,
+  Hourglass,
   ListChecks,
   Medal,
   MessageCircleQuestion,
+  Settings,
   Sprout,
   UserRound,
   X,
 } from 'lucide-react';
 import type { ReactElement } from 'react';
 import {
+  activeTags,
   MAX_WAITERS,
-  opensToWorkIn,
   type Rack,
   setsLine,
   timeLine,
@@ -28,47 +29,29 @@ const WAIT_LABEL: Record<WaitStatus, string> = {
 };
 
 function TagChips({ rack }: { rack: Rack }): ReactElement {
-  const { tags, session } = rack;
-  const byPhone = session?.by === 'phone';
+  const tags = activeTags(rack);
   // At rest the status line already says whether they share, so the tag would repeat it.
-  if (session?.lifting) {
-    return (
-      <ul className="chips" data-dim>
-        {opensToWorkIn(rack) ? (
-          <li className="chip">
-            <ArrowLeftRight />
-            Open to work in
-          </li>
-        ) : (
-          <li className="chip">
-            <Ban />
-            Not sharing
-          </li>
-        )}
-      </ul>
-    );
-  }
   return (
     <ul className="chips">
-      {byPhone && tags.experience === 'beginner' && (
+      {tags?.experience === 'beginner' && (
         <li className="chip">
           <Sprout />
           Beginner
         </li>
       )}
-      {byPhone && tags.experience === 'experienced' && (
+      {tags?.experience === 'experienced' && (
         <li className="chip">
           <Medal />
           Experienced
         </li>
       )}
-      {byPhone && tags.spot && (
+      {tags?.spot && (
         <li className="chip">
           <HandHelping />
           Can spot
         </li>
       )}
-      {byPhone && tags.questions && (
+      {tags?.questions && (
         <li className="chip">
           <MessageCircleQuestion />
           Open to questions
@@ -108,7 +91,10 @@ export function Tray({ rack }: { rack: Rack }): ReactElement {
       {session ? (
         <div className="tray-main">
           <div className="facts">
-            <h3 className="time">{timeLine(session)}</h3>
+            <h3 className="time">
+              <Clock aria-hidden="true" />
+              {timeLine(session)}
+            </h3>
             <p className="sets">{setsLine(session)}</p>
             <TagChips rack={rack} />
           </div>
@@ -120,6 +106,7 @@ export function Tray({ rack }: { rack: Rack }): ReactElement {
               disabled={waiters.length >= MAX_WAITERS}
               onClick={() => actions.openSheet('wait')}
             >
+              <Hourglass aria-hidden="true" />
               I'm waiting
             </button>
             <WaiterChips rack={rack} />
@@ -159,9 +146,19 @@ export function Tray({ rack }: { rack: Rack }): ReactElement {
           House rules
         </button>
         {session?.by === 'guest' && (
-          <button type="button" className="button button-end" onClick={actions.endSession}>
-            End session
-          </button>
+          <>
+            <button
+              type="button"
+              className="button button-quiet"
+              onClick={() => actions.openSheet('guest-edit')}
+            >
+              <Settings />
+              Edit settings
+            </button>
+            <button type="button" className="button button-end" onClick={actions.endSession}>
+              End session
+            </button>
+          </>
         )}
       </div>
     </section>

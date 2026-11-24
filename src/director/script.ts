@@ -43,7 +43,8 @@ export const chapters: Chapter[] = [
       await cast.touch('marcus', 'sets-minus', () => actions.adjustSets(-1));
       await cast.wait(250);
       await cast.touch('marcus', 'sets-minus', () => actions.adjustSets(-1));
-      await cast.wait(2600);
+      await cast.touch('marcus', 'sets-confirm', actions.confirmSets);
+      await cast.wait(1540);
     },
   },
   {
@@ -69,20 +70,20 @@ export const chapters: Chapter[] = [
   {
     title: 'Join the line',
     async run(cast) {
+      actions.rackBar();
+      cast.say('Set done. Now it is fine to ask.');
+      await cast.wait(3000);
       cast.say('She taps "I\'m waiting".');
       await cast.touch('maya', 'wait-open', () => actions.openSheet('wait'));
       await cast.wait(1700);
       await cast.touch('maya', 'wait-work-in', () => actions.joinLine('work-in'));
-      cast.say('Her request waits for his next rest.');
+      cast.say('She asks to work in.');
       await cast.wait(3600);
     },
   },
   {
-    title: 'Rest',
+    title: 'Work in',
     async run(cast) {
-      actions.rackBar();
-      cast.say('Set done. Now it is fine to ask.');
-      await cast.wait(3000);
       cast.say('His phone shows her request.');
       await cast.wait(2200);
       await cast.touch('marcus', 'request-accept', () => actions.answerWorkIn(true));
@@ -118,7 +119,7 @@ export const chapters: Chapter[] = [
       cast.say('Maya has no app. She starts on the screen.');
       await cast.touch('maya', 'guest-open', () => actions.openSheet('guest'));
       await cast.wait(1800);
-      await cast.touch('maya', 'guest-start', () => actions.startGuest(GUEST_DEFAULT_SETS, true));
+      await cast.touch('maya', 'guest-start', () => actions.startGuest(GUEST_DEFAULT_SETS));
       await cast.wait(2600);
       actions.liftBar();
       cast.say('The rack answers before anyone has to ask.');

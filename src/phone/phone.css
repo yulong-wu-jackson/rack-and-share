@@ -346,40 +346,28 @@
   color: var(--text-soft);
 }
 
-.phone-toast {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.phone-set-actions {
+  display: grid;
+  flex: none;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
   height: 46px;
   margin-top: 18px;
-  padding: 0 6px 0 18px;
-  border-radius: 23px;
-  background: var(--white);
-  color: var(--ink);
+}
+
+.phone-set-actions button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 100%;
+  border-radius: 14px;
   font-size: 16px;
-  font-weight: 700;
-  opacity: 0;
-  transform: translateY(8px) scale(0.97);
-  transition:
-    opacity 220ms,
-    transform 320ms var(--ease-out);
 }
 
-.phone-toast[data-on] {
-  opacity: 1;
-  transform: none;
-}
-
-.phone-toast button {
-  height: 36px;
-  padding: 0 14px;
-  border-radius: 18px;
-  font-weight: 800;
-  color: var(--blue);
-}
-
-.phone-toast button:hover {
-  background: var(--paper);
+.phone-set-actions svg {
+  width: 18px;
+  height: 18px;
 }
 
 .phone-session .tag-switches {
@@ -441,4 +429,8 @@
 
 .phone-secondary:hover {
   background: rgb(255 255 255 / 0.08);
+}
+
+.phone-set-actions .phone-secondary {
+  box-shadow: inset 0 0 0 2px var(--card-hover);
 }

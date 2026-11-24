@@ -1,37 +1,12 @@
-import { Minus, Plus } from 'lucide-react';
-import { type ReactElement, useEffect, useRef } from 'react';
-import { MAX_SETS, pendingRequest, type Session as RackSession } from '../state/model';
+import { Check, Minus, Plus, Undo2 } from 'lucide-react';
+import type { ReactElement } from 'react';
+import { MAX_SETS, pendingRequest } from '../state/model';
 import { actions, useApp } from '../state/store';
 import { TagSwitches } from './TagSwitches';
 
-const TOAST_MS = 4500;
-
-function unit({ setsLeft, lifting }: RackSession): string {
+function unit(setsLeft: number, lifting: boolean): string {
   const noun = setsLeft === 1 ? 'set' : 'sets';
   return lifting ? `${noun} after this one` : `${noun} left`;
-}
-
-/** Confirms a change to the count where the lifter is looking, with a way back. */
-function Toast(): ReactElement {
-  const toast = useApp((state) => state.toast);
-  // Holds the last message while the toast fades out.
-  const sets = useRef(0);
-  if (toast) sets.current = toast.sets;
-  const id = toast?.id;
-  useEffect(() => {
-    if (id === undefined) return;
-    const timer = window.setTimeout(() => actions.dismissToast(id), TOAST_MS);
-    return () => window.clearTimeout(timer);
-  }, [id]);
-
-  return (
-    <div className="phone-toast" data-on={toast ? '' : undefined} inert={!toast} role="status">
-      Rack updated: {sets.current} {sets.current === 1 ? 'set' : 'sets'}
-      <button type="button" onClick={actions.undoSets}>
-        Undo
-      </button>
-    </div>
-  );
 }
 
 function Request({ open }: { open: boolean }): ReactElement {
@@ -56,9 +31,11 @@ function Request({ open }: { open: boolean }): ReactElement {
 /** Checked in: the plan, the tags, and the way out. */
 export function Session(): ReactElement | null {
   const session = useApp((state) => state.rack.session);
+  const draftSets = useApp((state) => state.draftSets);
   const asked = useApp((state) => pendingRequest(state.rack) !== null);
   if (!session) return null;
   const { setsLeft, lifting } = session;
+  const displayedSets = draftSets ?? setsLeft;
   const done = setsLeft === 0 && !lifting;
 
   return (
@@ -75,27 +52,45 @@ export function Session(): ReactElement | null {
           type="button"
           aria-label="One set fewer"
           data-touch="sets-minus"
-          disabled={setsLeft === 0}
+          disabled={displayedSets === 0}
           onClick={() => actions.adjustSets(-1)}
         >
           <Minus />
         </button>
         <div className="phone-count">
-          <span key={setsLeft} className="phone-number">
-            {setsLeft}
+          <span key={displayedSets} className="phone-number">
+            {displayedSets}
           </span>
-          <span className="phone-unit">{unit(session)}</span>
+          <span className="phone-unit">{unit(displayedSets, lifting)}</span>
         </div>
         <button
           type="button"
           aria-label="One set more"
-          disabled={setsLeft === MAX_SETS}
+          disabled={displayedSets === MAX_SETS}
           onClick={() => actions.adjustSets(1)}
         >
           <Plus />
         </button>
       </div>
-      <Toast />
+      <div className="phone-set-actions">
+        {draftSets !== null && (
+          <>
+            <button
+              type="button"
+              className="phone-primary"
+              data-touch="sets-confirm"
+              onClick={actions.confirmSets}
+            >
+              <Check aria-hidden="true" />
+              Confirm
+            </button>
+            <button type="button" className="phone-secondary" onClick={actions.undoSets}>
+              <Undo2 aria-hidden="true" />
+              Undo
+            </button>
+          </>
+        )}
+      </div>
 
       <TagSwitches />
       <button
