@@ -1,8 +1,12 @@
 import { create } from 'zustand';
+import * as ambient from '../floor/ambient';
+import { type Floor, HERO_RACK, type RackId, seedFloor } from '../floor/racks';
 import type { Experience, Rack, ToggleTag, WaitKind } from './model';
 import * as model from './model';
 
 export type Mode = 'watch' | 'try';
+/** The board by the door, or one rack up close. */
+export type View = 'floor' | 'rack';
 export type Sheet = 'guide' | 'rules' | 'wait' | 'guest' | 'guest-edit';
 export type Persona = 'marcus' | 'maya';
 export type PhoneScreen = 'setup' | 'ready' | 'session';
@@ -15,7 +19,14 @@ export interface Touch {
 }
 
 export interface AppState {
+  view: View;
+  /** The rack in focus. `rack` is its live state; `floor` holds the others. */
+  rackId: RackId;
   rack: Rack;
+  floor: Floor;
+  beats: ambient.Beats;
+  /** Racks the viewer has walked up to. They only change when the viewer acts on them. */
+  held: RackId[];
   name: string;
   tagsSaved: boolean;
   sheet: Sheet | null;
@@ -25,6 +36,8 @@ export interface AppState {
   playing: boolean;
   chapter: number;
   caption: string;
+  /** The `data-cue` (or `data-touch`) name of the element the caption talks about. */
+  cue: string | null;
 
   /** Who is on the gym floor, and who stands in the rack. */
   present: Record<Persona, boolean>;
@@ -46,8 +59,16 @@ const WATCH_TAGS: model.Tags = {
 
 function initialState(mode: Mode): AppState {
   const watching = mode === 'watch';
+  const floor = seedFloor(
+    watching ? { ...model.initialRack, tags: WATCH_TAGS } : model.initialRack,
+  );
   return {
-    rack: watching ? { ...model.initialRack, tags: WATCH_TAGS } : model.initialRack,
+    view: 'floor',
+    rackId: HERO_RACK,
+    rack: floor[HERO_RACK],
+    floor,
+    beats: ambient.initialBeats(),
+    held: [],
     name: 'Marcus',
     tagsSaved: watching,
     sheet: null,
@@ -56,6 +77,7 @@ function initialState(mode: Mode): AppState {
     playing: watching,
     chapter: 0,
     caption: '',
+    cue: null,
     present: { marcus: !watching, maya: !watching },
     atRack: 'marcus',
     gaze: false,
@@ -90,9 +112,48 @@ export const actions = {
       mode: 'try',
       playing: false,
       caption: '',
+      cue: null,
       gaze: false,
       touches: { marcus: null, maya: null },
       present: { marcus: true, maya: true },
+    });
+  },
+
+  /** Walks from the board to one rack. Your saved tags come along unless someone else is checked in. */
+  enterRack(id: RackId): void {
+    set((state) => {
+      const floor = { ...state.floor, [state.rackId]: state.rack };
+      const target = floor[id];
+      const rack = target.session?.by === 'phone' ? target : { ...target, tags: state.rack.tags };
+      return {
+        view: 'rack',
+        rackId: id,
+        rack,
+        floor,
+        held: state.held.includes(id) ? state.held : [...state.held, id],
+        sheet: null,
+        draftSets: null,
+        atRack: rack.session?.by === 'guest' ? 'maya' : 'marcus',
+        touches: { marcus: null, maya: null },
+        sceneCut: state.sceneCut + 1,
+      };
+    });
+  },
+  showFloor(): void {
+    set((state) => ({
+      view: 'floor',
+      floor: { ...state.floor, [state.rackId]: state.rack },
+      sheet: null,
+      draftSets: null,
+      touches: { marcus: null, maya: null },
+    }));
+  },
+  /** One second passes on the floor for every rack the viewer has not walked up to. */
+  tickFloor(): void {
+    set((state) => {
+      if (state.mode === 'watch' && !state.playing) return state;
+      const next = ambient.tick(state.floor, state.beats, [state.rackId, ...state.held]);
+      return next.changed ? { floor: next.floor, beats: next.beats } : { beats: next.beats };
     });
   },
 

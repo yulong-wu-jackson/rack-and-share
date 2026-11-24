@@ -37,6 +37,7 @@ function Figure({
   return (
     <g
       className={`figure figure-${who}`}
+      data-cue={`figure-${who}`}
       transform={`translate(${actor.x.toFixed(1)} ${FLOOR})`}
       opacity={actor.opacity}
     >

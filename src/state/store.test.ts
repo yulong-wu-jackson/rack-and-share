@@ -91,3 +91,46 @@ describe('spots', () => {
     expect(spots(state())).toEqual({ maya: 'rack', marcus: 'side' });
   });
 });
+
+describe('floor and racks', () => {
+  beforeEach(() => actions.reset('try'));
+
+  it('starts on the board and walks into a rack with its own state', () => {
+    expect(state().view).toBe('floor');
+    actions.enterRack(2);
+    expect(state().view).toBe('rack');
+    expect(state().rackId).toBe(2);
+    expect(state().rack).toBe(state().floor[2]);
+  });
+
+  it('keeps a rack as it was left when walking back to the board', () => {
+    actions.enterRack(3);
+    actions.phoneTap();
+    actions.showFloor();
+    expect(state().floor[3].session?.by).toBe('phone');
+
+    actions.enterRack(1);
+    expect(state().rack.session?.lifting).toBe(true);
+    actions.enterRack(3);
+    expect(state().rack.session?.by).toBe('phone');
+  });
+
+  it('brings your saved tags to a rack nobody has checked in on', () => {
+    actions.setTag('questions', true);
+    actions.enterRack(4);
+    expect(state().rack.tags.questions).toBe(false);
+    actions.showFloor();
+    actions.enterRack(3);
+    expect(state().rack.tags.questions).toBe(false);
+  });
+
+  it('only runs the racks the viewer has not walked up to', () => {
+    actions.enterRack(1);
+    const rack1 = state().floor[1];
+    actions.showFloor();
+    for (let second = 0; second < 40; second += 1) actions.tickFloor();
+    expect(state().floor[1]).toBe(state().rack);
+    expect(state().held).toEqual([1]);
+    expect(state().floor[1].session).toEqual(rack1.session);
+  });
+});

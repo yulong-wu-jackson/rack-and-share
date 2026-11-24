@@ -65,7 +65,7 @@ function WaiterChips({ rack }: { rack: Rack }): ReactElement | null {
   const { waiters, session } = rack;
   if (waiters.length === 0) return null;
   return (
-    <ul className="waiters">
+    <ul className="waiters" data-cue="station-line">
       {waiters.map((waiter, index) => (
         <li key={waiter.id} className="waiter" data-status={waiter.status}>
           <UserRound />
@@ -119,7 +119,7 @@ export function Tray({ rack }: { rack: Rack }): ReactElement {
     <section className="tray">
       {session ? (
         <div className="tray-main">
-          <div className="facts">
+          <div className="facts" data-cue="station-facts">
             <h3 className="time">
               <Clock aria-hidden="true" />
               {timeLine(session)}

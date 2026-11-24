@@ -39,8 +39,8 @@ function liftTouch(who: Persona): void {
 
 function makeCast(story: Clock): Cast {
   return {
-    say(caption) {
-      set({ caption });
+    say(caption, cue = null) {
+      set({ caption, cue });
     },
     wait(ms) {
       return story.sleep(ms);
@@ -67,6 +67,8 @@ function makeCast(story: Clock): Cast {
         await story.sleep(180);
       }
       act();
+      // Once the finger has pressed what the cue pointed at, the cue has done its job.
+      if (get().cue === name) set({ cue: null });
       await story.sleep(260);
       liftTouch(who);
     },

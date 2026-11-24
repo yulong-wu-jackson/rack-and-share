@@ -31,14 +31,18 @@ const ACTIONS: Record<WorldAction, { label: string; icon: ReactElement; run(): P
 
 /** In Try mode the line describes the gym floor and offers the next physical action. */
 function promptFor(state: AppState): Prompt {
+  if (state.view === 'floor') {
+    return { headline: 'Pick a rack on the board to walk over to it.', action: null };
+  }
   const session = state.rack.session;
   if (!session) {
     if (phoneScreen(state) === 'setup') {
       return { headline: 'Start with your phone or at the station.', action: null };
     }
+    const rack = `Rack ${state.rackId}`;
     const free = rackStatus(state.rack) === 'free';
     return {
-      headline: free ? 'Rack 3 is free.' : 'Rack 3 is free for the next in line.',
+      headline: free ? `${rack} is free.` : `${rack} is free for the next in line.`,
       action: 'tap-phone',
     };
   }

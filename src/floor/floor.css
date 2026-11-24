@@ -1,0 +1,304 @@
+/* Placement of the board and its legend on the stage. */
+
+.board {
+  position: absolute;
+  top: 96px;
+  left: 457px;
+  width: 866px;
+  height: 744px;
+  padding: 12px;
+  border-radius: 30px;
+}
+
+.legend {
+  position: absolute;
+  top: 610px;
+  left: 117px;
+  width: 300px;
+}
+
+[data-layout='portrait'] .board {
+  top: 200px;
+  left: 20px;
+  width: 780px;
+  height: 960px;
+}
+
+[data-layout='portrait'] .legend {
+  top: 1200px;
+  left: 24px;
+  width: 772px;
+}
+
+/* Legend: the colour code, with a live count for each. */
+
+.legend h3 {
+  margin-bottom: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-soft);
+}
+
+.legend ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legend li {
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  height: 38px;
+  border-bottom: 1px solid var(--line);
+  font-size: 17px;
+  font-weight: 700;
+  transition: opacity 300ms;
+}
+
+.legend li[data-empty] {
+  opacity: 0.38;
+}
+
+.legend-swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  background: var(--state);
+}
+
+.legend-count {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The board's screen */
+
+.board-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 19px;
+  background: var(--white);
+  color: var(--ink);
+}
+
+.board-head,
+.board-foot {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+}
+
+.board-head {
+  height: 74px;
+}
+
+.board-head h2 {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.board-live {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #4a5a76;
+}
+
+.board-live::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--go);
+  animation: live-pulse 2s var(--ease-in-out) infinite;
+}
+
+@keyframes live-pulse {
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--go) 25%, transparent);
+  }
+}
+
+/* A plan of the room: one row of racks along the wall, one facing it across the walkway. */
+.board-map {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 44px;
+  margin: 0 20px;
+  padding: 18px;
+  border-radius: 22px;
+  background: var(--paper);
+  box-shadow: inset 0 6px 0 #d8dfe9;
+}
+
+.board-map::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 30px;
+  left: 30px;
+  border-top: 2px dashed #c3ccd9;
+}
+
+.board-row {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.board-row li {
+  display: flex;
+}
+
+.tile {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 16px 18px 14px;
+  overflow: hidden;
+  border-radius: 18px;
+  color: var(--state-ink);
+  text-align: left;
+  box-shadow: 0 12px 26px -16px rgb(21 34 56 / 0.55);
+  transition:
+    transform 220ms var(--ease-out),
+    box-shadow 220ms var(--ease-out),
+    color 300ms;
+}
+
+.tile:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 34px -16px rgb(21 34 56 / 0.6);
+}
+
+.tile:active {
+  transform: scale(0.97);
+}
+
+.tile > span {
+  position: relative;
+}
+
+.tile-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.tile-name {
+  margin-right: auto;
+}
+
+.tile-mark {
+  width: 40px;
+  height: 28px;
+}
+
+.tile-text {
+  display: flex;
+  flex-direction: column;
+  animation: tile-in 520ms var(--ease-out) both;
+}
+
+@keyframes tile-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+.tile-word {
+  font-family: var(--font-display);
+  font-size: 50px;
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+}
+
+.tile-line {
+  margin-top: 6px;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.tile-foot {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 24px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.tile-foot svg,
+.tile-waiting svg {
+  width: 17px;
+  height: 17px;
+}
+
+.tile-waiting {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 10px 0 8px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--state-ink) 14%, transparent);
+  font-size: 15px;
+  animation: tile-in 420ms var(--ease-out) both;
+}
+
+.board-foot {
+  height: 66px;
+}
+
+.board-tip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 19px;
+  font-weight: 700;
+  animation: tile-in 520ms var(--ease-out) both;
+}
+
+.board-tip svg {
+  width: 22px;
+  height: 22px;
+  color: var(--blue);
+}
+
+.board-here {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #4a5a76;
+}
+
+.board-here svg {
+  width: 18px;
+  height: 18px;
+}

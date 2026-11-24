@@ -1,0 +1,18 @@
+.status-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--state);
+}
+
+.status-wipe {
+  animation: status-wipe 620ms var(--ease-out) both;
+}
+
+@keyframes status-wipe {
+  from {
+    clip-path: circle(0% at 82% 50%);
+  }
+  to {
+    clip-path: circle(140% at 82% 50%);
+  }
+}
