@@ -1,3 +1,4 @@
+import { Hand } from 'lucide-react';
 import { type ReactElement, useState } from 'react';
 import { BrandSymbol } from '../components/BrandSymbol';
 import { type RackStatus, rackStatus } from '../state/model';
@@ -7,8 +8,8 @@ import './station.css';
 import { Tray } from './Tray';
 
 const COPY: Record<RackStatus, { word: string; line: string }> = {
-  free: { word: 'Free', line: 'Tap your phone to start.' },
-  'your-turn': { word: 'Your turn', line: 'Next in line, the rack is yours.' },
+  free: { word: 'Free', line: 'Tap your phone or start here.' },
+  'your-turn': { word: 'Your turn', line: 'You’re next in line.' },
   'mid-set': { word: 'Mid-set', line: 'Please wait for the next rest.' },
   'resting-open': { word: 'Resting', line: 'Open to work in. Ask now.' },
   'resting-closed': { word: 'Resting', line: 'Not sharing today.' },
@@ -43,7 +44,11 @@ function StatusField({ status }: { status: RackStatus }): ReactElement {
       </div>
       <div className="status-id">
         <p className="status-rack">Rack 3</p>
-        <BrandSymbol className="status-bar" />
+        {status === 'mid-set' ? (
+          <Hand className="status-hand" aria-hidden="true" />
+        ) : (
+          <BrandSymbol className="status-bar" />
+        )}
       </div>
     </section>
   );
@@ -54,11 +59,12 @@ export function Station(): ReactElement {
   const rack = useApp((state) => state.rack);
   const sheet = useApp((state) => state.sheet);
   const status = rackStatus(rack);
+  const midSet = status === 'mid-set';
   return (
-    <div className="station" data-status={status} data-compact={sheet ? '' : undefined}>
+    <div className="station" data-status={status} data-compact={sheet && !midSet ? '' : undefined}>
       <StatusField status={status} />
-      <Tray rack={rack} />
-      <SheetHost sheet={sheet} rack={rack} />
+      {!midSet && <Tray rack={rack} />}
+      <SheetHost sheet={sheet} rack={rack} suspended={midSet} />
     </div>
   );
 }

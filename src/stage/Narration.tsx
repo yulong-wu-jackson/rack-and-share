@@ -18,12 +18,12 @@ const ACTIONS: Record<WorldAction, { label: string; icon: ReactElement; run(): P
     run: () => flyPhoneToStation(actions.phoneTap),
   },
   lift: {
-    label: 'Lift the bar',
+    label: 'Start a set',
     icon: <ArrowUpFromLine />,
     run: async () => actions.liftBar(),
   },
   rack: {
-    label: 'Rack the bar',
+    label: 'Finish this set',
     icon: <ArrowDownToLine />,
     run: async () => actions.rackBar(),
   },
@@ -34,7 +34,7 @@ function promptFor(state: AppState): Prompt {
   const session = state.rack.session;
   if (!session) {
     if (phoneScreen(state) === 'setup') {
-      return { headline: 'Start on the phone. Save your tags.', action: null };
+      return { headline: 'Start with your phone or at the station.', action: null };
     }
     const free = rackStatus(state.rack) === 'free';
     return {

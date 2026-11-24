@@ -21,14 +21,11 @@ export interface Waiter {
   status: WaitStatus;
 }
 
-export interface Session {
-  by: 'phone' | 'guest';
+export type Session = {
   /** Sets left after the one in progress. */
   setsLeft: number;
   lifting: boolean;
-  /** A guest has no saved tags, so this is their one answer at check-in. */
-  guestWorkIn: boolean;
-}
+} & ({ by: 'phone' } | { by: 'guest'; tags: Tags });
 
 export interface Rack {
   tags: Tags;
@@ -41,6 +38,12 @@ export type RackStatus = 'free' | 'your-turn' | 'mid-set' | 'resting-open' | 're
 
 export const DEFAULT_SETS = 5;
 export const GUEST_DEFAULT_SETS = 3;
+export const GUEST_DEFAULT_TAGS: Tags = {
+  experience: null,
+  workIn: true,
+  spot: false,
+  questions: false,
+};
 export const MAX_SETS = 9;
 export const MAX_WAITERS = 3;
 const MINUTES_PER_SET = 5;
@@ -52,9 +55,14 @@ export const initialRack: Rack = {
   nextWaiterId: 1,
 };
 
+export function activeTags(rack: Rack): Tags | null {
+  const { session } = rack;
+  if (!session) return null;
+  return session.by === 'guest' ? session.tags : rack.tags;
+}
+
 export function opensToWorkIn(rack: Rack): boolean {
-  if (!rack.session) return false;
-  return rack.session.by === 'phone' ? rack.tags.workIn : rack.session.guestWorkIn;
+  return activeTags(rack)?.workIn ?? false;
 }
 
 export function rackStatus(rack: Rack): RackStatus {
@@ -96,17 +104,22 @@ export function checkIn(rack: Rack): Rack {
     by: 'phone',
     setsLeft: DEFAULT_SETS,
     lifting: false,
-    guestWorkIn: false,
   });
 }
 
-export function startGuest(rack: Rack, sets: number, workIn: boolean): Rack {
+export function startGuest(rack: Rack, sets: number, tags: Tags = GUEST_DEFAULT_TAGS): Rack {
   return startSession(rack, {
     by: 'guest',
     setsLeft: sets,
     lifting: false,
-    guestWorkIn: workIn,
+    tags: { ...tags },
   });
+}
+
+export function updateGuestSettings(rack: Rack, sets: number, tags: Tags): Rack {
+  if (rack.session?.by !== 'guest') return rack;
+  const next = setSets({ ...rack, session: { ...rack.session, tags: { ...tags } } }, sets);
+  return rack.session.tags.workIn && !tags.workIn ? answerWorkIn(next, false) : next;
 }
 
 /** The sensor sees the bar leave the hooks: a set starts and the count drops. */

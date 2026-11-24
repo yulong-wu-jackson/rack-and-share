@@ -1,19 +1,20 @@
 import {
-  ArrowLeftRight,
-  Ban,
   BookOpen,
+  Clock,
   HandHelping,
+  Hourglass,
   ListChecks,
   Medal,
   MessageCircleQuestion,
+  Settings,
   Sprout,
   UserRound,
   X,
 } from 'lucide-react';
 import type { ReactElement } from 'react';
 import {
+  activeTags,
   MAX_WAITERS,
-  opensToWorkIn,
   type Rack,
   setsLine,
   timeLine,
@@ -28,47 +29,29 @@ const WAIT_LABEL: Record<WaitStatus, string> = {
 };
 
 function TagChips({ rack }: { rack: Rack }): ReactElement {
-  const { tags, session } = rack;
-  const byPhone = session?.by === 'phone';
+  const tags = activeTags(rack);
   // At rest the status line already says whether they share, so the tag would repeat it.
-  if (session?.lifting) {
-    return (
-      <ul className="chips" data-dim>
-        {opensToWorkIn(rack) ? (
-          <li className="chip">
-            <ArrowLeftRight />
-            Open to work in
-          </li>
-        ) : (
-          <li className="chip">
-            <Ban />
-            Not sharing
-          </li>
-        )}
-      </ul>
-    );
-  }
   return (
     <ul className="chips">
-      {byPhone && tags.experience === 'beginner' && (
+      {tags?.experience === 'beginner' && (
         <li className="chip">
           <Sprout />
           Beginner
         </li>
       )}
-      {byPhone && tags.experience === 'experienced' && (
+      {tags?.experience === 'experienced' && (
         <li className="chip">
           <Medal />
           Experienced
         </li>
       )}
-      {byPhone && tags.spot && (
+      {tags?.spot && (
         <li className="chip">
           <HandHelping />
           Can spot
         </li>
       )}
-      {byPhone && tags.questions && (
+      {tags?.questions && (
         <li className="chip">
           <MessageCircleQuestion />
           Open to questions
@@ -100,15 +83,47 @@ function WaiterChips({ rack }: { rack: Rack }): ReactElement | null {
   );
 }
 
+function TrayLink({
+  icon,
+  label,
+  iconOnly,
+  touch,
+  onClick,
+}: {
+  icon: ReactElement;
+  label: string;
+  iconOnly: boolean;
+  touch?: string;
+  onClick: () => void;
+}): ReactElement {
+  return (
+    <button
+      type="button"
+      className={iconOnly ? 'button button-quiet button-icon' : 'button button-quiet'}
+      aria-label={iconOnly ? label : undefined}
+      title={iconOnly ? label : undefined}
+      data-touch={touch}
+      onClick={onClick}
+    >
+      {icon}
+      {!iconOnly && label}
+    </button>
+  );
+}
+
 /** The lower half of the screen: the facts a waiting lifter plans around, and what they can do. */
 export function Tray({ rack }: { rack: Rack }): ReactElement {
   const { session, waiters } = rack;
+  const guest = session?.by === 'guest';
   return (
     <section className="tray">
       {session ? (
         <div className="tray-main">
           <div className="facts">
-            <h3 className="time">{timeLine(session)}</h3>
+            <h3 className="time">
+              <Clock aria-hidden="true" />
+              {timeLine(session)}
+            </h3>
             <p className="sets">{setsLine(session)}</p>
             <TagChips rack={rack} />
           </div>
@@ -120,6 +135,7 @@ export function Tray({ rack }: { rack: Rack }): ReactElement {
               disabled={waiters.length >= MAX_WAITERS}
               onClick={() => actions.openSheet('wait')}
             >
+              <Hourglass aria-hidden="true" />
               I'm waiting
             </button>
             <WaiterChips rack={rack} />
@@ -141,27 +157,34 @@ export function Tray({ rack }: { rack: Rack }): ReactElement {
         </div>
       )}
       <div className="tray-links">
-        <button
-          type="button"
-          className="button button-quiet"
-          data-touch="open-guide"
+        {/* Guest buttons need the room, so the shared links shrink to icons and clear the line. */}
+        <TrayLink
+          icon={<BookOpen />}
+          label="Equipment guide"
+          iconOnly={guest}
+          touch="open-guide"
           onClick={() => actions.openSheet('guide')}
-        >
-          <BookOpen />
-          Equipment guide
-        </button>
-        <button
-          type="button"
-          className="button button-quiet"
+        />
+        <TrayLink
+          icon={<ListChecks />}
+          label="House rules"
+          iconOnly={guest}
           onClick={() => actions.openSheet('rules')}
-        >
-          <ListChecks />
-          House rules
-        </button>
-        {session?.by === 'guest' && (
-          <button type="button" className="button button-end" onClick={actions.endSession}>
-            End session
-          </button>
+        />
+        {guest && (
+          <>
+            <button
+              type="button"
+              className="button button-quiet"
+              onClick={() => actions.openSheet('guest-edit')}
+            >
+              <Settings />
+              Edit settings
+            </button>
+            <button type="button" className="button button-end" onClick={actions.endSession}>
+              End session
+            </button>
+          </>
         )}
       </div>
     </section>
