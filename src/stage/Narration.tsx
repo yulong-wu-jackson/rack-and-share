@@ -1,7 +1,14 @@
 import { ArrowDownToLine, ArrowUpFromLine, Nfc } from 'lucide-react';
 import { type ReactElement, useState } from 'react';
 import { rackStatus } from '../state/model';
-import { type AppState, actions, lifterName, phoneScreen, useApp } from '../state/store';
+import {
+  type AppState,
+  actions,
+  checkedInElsewhere,
+  lifterName,
+  phoneScreen,
+  useApp,
+} from '../state/store';
 import { flyPhoneToStation } from './phoneTap';
 
 type WorldAction = 'tap-phone' | 'lift' | 'rack';
@@ -15,7 +22,14 @@ const ACTIONS: Record<WorldAction, { label: string; icon: ReactElement; run(): P
   'tap-phone': {
     label: 'Tap phone on rack',
     icon: <Nfc />,
-    run: () => flyPhoneToStation(actions.phoneTap),
+    run: () => {
+      // The viewer may walk away while the phone is in the air; the tap only counts where it began.
+      const { rackId } = useApp.getState();
+      return flyPhoneToStation(() => {
+        const now = useApp.getState();
+        if (now.view === 'rack' && now.rackId === rackId) actions.phoneTap();
+      });
+    },
   },
   lift: {
     label: 'Start a set',
@@ -36,6 +50,10 @@ function promptFor(state: AppState): Prompt {
   }
   const session = state.rack.session;
   if (!session) {
+    const elsewhere = checkedInElsewhere(state);
+    if (elsewhere !== null) {
+      return { headline: `You're checked in on Rack ${elsewhere}.`, action: null };
+    }
     if (phoneScreen(state) === 'setup') {
       return { headline: 'Start with your phone or at the station.', action: null };
     }

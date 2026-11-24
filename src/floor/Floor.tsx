@@ -17,6 +17,14 @@ import {
 } from './racks';
 import './floor.css';
 
+/** Everything the tile shows, read out in one go. */
+function tileLabel(id: RackId, rack: Rack): string {
+  const { word, line } = BOARD_COPY[rackStatus(rack)];
+  const time = rack.session ? ` ${timeLine(rack.session)}.` : '';
+  const waiting = rack.waiters.length > 0 ? ` ${rack.waiters.length} waiting.` : '';
+  return `Rack ${id}: ${word}. ${line}${time}${waiting}`;
+}
+
 function Tile({ id, rack }: { id: RackId; rack: Rack }): ReactElement {
   const status = rackStatus(rack);
   const { word, line } = BOARD_COPY[status];
@@ -28,7 +36,7 @@ function Tile({ id, rack }: { id: RackId; rack: Rack }): ReactElement {
         className="tile"
         data-status={status}
         data-touch={`floor-rack-${id}`}
-        aria-label={`Rack ${id}: ${word}. ${line}`}
+        aria-label={tileLabel(id, rack)}
         onClick={() => actions.enterRack(id)}
       >
         <ColourWipe status={status} />
@@ -105,14 +113,21 @@ export function Floor(): ReactElement {
   const tip = bestBet(floor);
   const root = useRef<HTMLDivElement>(null);
 
-  // The board zooms into, and back out of, the rack in focus.
+  // The board zooms into, and back out of, the rack in focus. A layout switch resizes the board.
   useLayoutEffect(() => {
     const element = root.current;
-    const tile = element?.querySelector<HTMLElement>(`[data-touch="floor-rack-${rackId}"]`);
-    if (!element || !tile) return;
-    const { x, y } = centreWithin(tile, element);
-    element.style.setProperty('--zoom-x', `${x}px`);
-    element.style.setProperty('--zoom-y', `${y}px`);
+    if (!element) return;
+    const place = (): void => {
+      const tile = element.querySelector<HTMLElement>(`[data-touch="floor-rack-${rackId}"]`);
+      if (!tile) return;
+      const { x, y } = centreWithin(tile, element);
+      element.style.setProperty('--zoom-x', `${x}px`);
+      element.style.setProperty('--zoom-y', `${y}px`);
+    };
+    place();
+    const observer = new ResizeObserver(place);
+    observer.observe(element);
+    return () => observer.disconnect();
   }, [rackId]);
 
   const rows = [RACK_IDS.slice(0, 3), RACK_IDS.slice(3)];

@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { HERO_RACK } from '../floor/racks';
+import { initialRack } from './model';
 
 // The store reads the mode from the URL when it loads.
 vi.hoisted(() => {
   vi.stubGlobal('window', { location: { search: '' } });
 });
 
-const { actions, spots, useApp } = await import('./store');
+const { actions, lifterName, phoneScreen, spots, useApp } = await import('./store');
 
 const state = useApp.getState;
 
@@ -115,22 +117,49 @@ describe('floor and racks', () => {
     expect(state().rack.session?.by).toBe('phone');
   });
 
-  it('brings your saved tags to a rack nobody has checked in on', () => {
+  it('keeps your tags when you walk past another lifter', () => {
     actions.setTag('questions', true);
     actions.enterRack(4);
     expect(state().rack.tags.questions).toBe(false);
     actions.showFloor();
     actions.enterRack(3);
-    expect(state().rack.tags.questions).toBe(false);
+    actions.phoneTap();
+    expect(state().rack.tags.questions).toBe(true);
   });
 
-  it('only runs the racks the viewer has not walked up to', () => {
+  it("keeps another lifter's phone session off your phone", () => {
+    actions.saveTags();
+    actions.enterRack(2);
+    expect(phoneScreen(state())).toBe('ready');
+    expect(lifterName(state())).toBe('The lifter');
+  });
+
+  it('checks your phone in on one rack at a time', () => {
+    actions.enterRack(3);
+    actions.phoneTap();
+    useApp.setState((current) => ({ floor: { ...current.floor, 4: initialRack } }));
+    actions.enterRack(4);
+    actions.phoneTap();
+    expect(state().rack.session).toBeNull();
+    expect(state().mine).toBe(3);
+  });
+
+  it('holds the racks the viewer changed and runs the rest', () => {
+    actions.enterRack(3);
+    actions.phoneTap();
+    const mine = state().rack;
     actions.enterRack(1);
-    const rack1 = state().floor[1];
     actions.showFloor();
+    const before = state().floor;
     for (let second = 0; second < 40; second += 1) actions.tickFloor();
-    expect(state().floor[1]).toBe(state().rack);
-    expect(state().held).toEqual([1]);
-    expect(state().floor[1].session).toEqual(rack1.session);
+    expect(state().held).toEqual([HERO_RACK]);
+    expect(state().floor[HERO_RACK]).toBe(mine);
+    expect(state().floor[1]).not.toBe(before[1]);
+  });
+
+  it('runs the rack in focus while the viewer is on the board', () => {
+    for (let second = 0; second < 40; second += 1) actions.tickFloor();
+    expect(state().floor[HERO_RACK].session).not.toBeNull();
+    expect(state().rack).toBe(state().floor[HERO_RACK]);
   });
 });

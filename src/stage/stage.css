@@ -516,6 +516,11 @@
   inset-inline: 24px;
 }
 
+/* Up close the breadcrumbs take the logo's place, so the story controls still fit. */
+[data-layout='portrait'] .stage[data-view='rack'] .brand {
+  display: none;
+}
+
 [data-layout='portrait'] .narration {
   top: 78px;
   left: 24px;

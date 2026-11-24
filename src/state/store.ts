@@ -25,9 +25,13 @@ export interface AppState {
   rack: Rack;
   floor: Floor;
   beats: ambient.Beats;
-  /** Racks the viewer has walked up to. They only change when the viewer acts on them. */
+  /** Racks the viewer has changed. They wait for the viewer instead of running on their own. */
   held: RackId[];
+  /** The rack the viewer's phone is checked in on. */
+  mine: RackId | null;
   name: string;
+  /** The viewer's own tags. A rack takes them when the viewer's phone checks in there. */
+  tags: model.Tags;
   tagsSaved: boolean;
   sheet: Sheet | null;
   draftSets: number | null;
@@ -59,9 +63,7 @@ const WATCH_TAGS: model.Tags = {
 
 function initialState(mode: Mode): AppState {
   const watching = mode === 'watch';
-  const floor = seedFloor(
-    watching ? { ...model.initialRack, tags: WATCH_TAGS } : model.initialRack,
-  );
+  const floor = seedFloor(model.initialRack);
   return {
     view: 'floor',
     rackId: HERO_RACK,
@@ -69,7 +71,9 @@ function initialState(mode: Mode): AppState {
     floor,
     beats: ambient.initialBeats(),
     held: [],
+    mine: null,
     name: 'Marcus',
+    tags: watching ? WATCH_TAGS : model.initialRack.tags,
     tagsSaved: watching,
     sheet: null,
     draftSets: null,
@@ -101,6 +105,24 @@ function updateRack(change: (rack: Rack) => Rack): void {
   set((state) => ({ rack: change(state.rack) }));
 }
 
+/** Puts the rack in focus back on the floor, and holds it there if the viewer changed it. */
+function leaveRack(state: AppState): Pick<AppState, 'floor' | 'held'> {
+  const { rackId, rack } = state;
+  if (rack === state.floor[rackId]) return { floor: state.floor, held: state.held };
+  return {
+    floor: { ...state.floor, [rackId]: rack },
+    held: state.held.includes(rackId) ? state.held : [...state.held, rackId],
+  };
+}
+
+/** Changes the viewer's tags, and their live session's too when they are at it. */
+function updateTags(tags: model.Tags, change: (rack: Rack) => Rack): void {
+  set((state) => ({
+    tags,
+    rack: state.mine === state.rackId ? change(state.rack) : state.rack,
+  }));
+}
+
 export const actions = {
   reset(mode: Mode): void {
     set({ ...initialState(mode), sceneCut: get().sceneCut + 1 });
@@ -119,18 +141,17 @@ export const actions = {
     });
   },
 
-  /** Walks from the board to one rack. Your saved tags come along unless someone else is checked in. */
+  /** Walks from the board to one rack. */
   enterRack(id: RackId): void {
     set((state) => {
-      const floor = { ...state.floor, [state.rackId]: state.rack };
-      const target = floor[id];
-      const rack = target.session?.by === 'phone' ? target : { ...target, tags: state.rack.tags };
+      const { floor, held } = leaveRack(state);
+      const rack = floor[id];
       return {
         view: 'rack',
         rackId: id,
         rack,
         floor,
-        held: state.held.includes(id) ? state.held : [...state.held, id],
+        held,
         sheet: null,
         draftSets: null,
         atRack: rack.session?.by === 'guest' ? 'maya' : 'marcus',
@@ -142,18 +163,23 @@ export const actions = {
   showFloor(): void {
     set((state) => ({
       view: 'floor',
-      floor: { ...state.floor, [state.rackId]: state.rack },
+      ...leaveRack(state),
       sheet: null,
       draftSets: null,
       touches: { marcus: null, maya: null },
     }));
   },
-  /** One second passes on the floor for every rack the viewer has not walked up to. */
+  /** One second passes for every rack the viewer is not standing at and has not changed. */
   tickFloor(): void {
     set((state) => {
       if (state.mode === 'watch' && !state.playing) return state;
-      const next = ambient.tick(state.floor, state.beats, [state.rackId, ...state.held]);
-      return next.changed ? { floor: next.floor, beats: next.beats } : { beats: next.beats };
+      const upClose = state.view === 'rack';
+      const skip = upClose ? [state.rackId, ...state.held] : state.held;
+      const next = ambient.tick(state.floor, state.beats, skip);
+      if (!next.changed) return { beats: next.beats };
+      // On the board, the rack last in focus runs like the others.
+      const rack = upClose ? state.rack : next.floor[state.rackId];
+      return { floor: next.floor, beats: next.beats, rack };
     });
   },
 
@@ -161,10 +187,10 @@ export const actions = {
     set({ name });
   },
   setExperience(experience: Experience): void {
-    updateRack((rack) => model.setExperience(rack, experience));
+    updateTags({ ...get().tags, experience }, (rack) => model.setExperience(rack, experience));
   },
   setTag(tag: ToggleTag, on: boolean): void {
-    updateRack((rack) => model.setTag(rack, tag, on));
+    updateTags({ ...get().tags, [tag]: on }, (rack) => model.setTag(rack, tag, on));
   },
   saveTags(): void {
     set({ tagsSaved: true });
@@ -173,13 +199,18 @@ export const actions = {
     set({ tagsSaved: false });
   },
 
+  /** Checks the viewer in with their tags, if the rack is free and the phone is not in use elsewhere. */
   phoneTap(): void {
-    set((state) => ({
-      rack: model.checkIn(state.rack),
-      atRack: state.rack.session ? state.atRack : 'marcus',
-      sheet: null,
-      nfcPulse: state.nfcPulse + 1,
-    }));
+    set((state) => {
+      const checkIn = !state.rack.session && state.mine === null;
+      return {
+        rack: checkIn ? model.checkIn({ ...state.rack, tags: state.tags }) : state.rack,
+        mine: checkIn ? state.rackId : state.mine,
+        atRack: checkIn ? 'marcus' : state.atRack,
+        sheet: null,
+        nfcPulse: state.nfcPulse + 1,
+      };
+    });
   },
   startGuest(sets: number, tags?: model.Tags): void {
     set((state) => ({
@@ -194,6 +225,7 @@ export const actions = {
   endSession(): void {
     set((state) => ({
       rack: model.endSession(state.rack),
+      mine: state.mine === state.rackId ? null : state.mine,
       draftSets: null,
       sheet: state.sheet === 'guest-edit' ? null : state.sheet,
     }));
@@ -262,12 +294,19 @@ export const actions = {
 };
 
 export function phoneScreen(state: AppState): PhoneScreen {
-  if (state.rack.session?.by === 'phone') return 'session';
+  if (state.mine === state.rackId) return 'session';
   return state.tagsSaved ? 'ready' : 'setup';
 }
 
+/** The rack the viewer's phone is checked in on, when that is not the rack in focus. */
+export function checkedInElsewhere(state: AppState): RackId | null {
+  return state.mine === state.rackId ? null : state.mine;
+}
+
 export function lifterName(state: AppState): string {
-  return state.atRack === 'marcus' ? state.name.trim() || 'Marcus' : 'Maya';
+  if (state.atRack === 'maya') return 'Maya';
+  // Another lifter's phone session belongs to someone the viewer does not know.
+  return state.mine === state.rackId ? state.name.trim() || 'Marcus' : 'The lifter';
 }
 
 /** Where each person stands, worked out from the rack and the open sheet. */

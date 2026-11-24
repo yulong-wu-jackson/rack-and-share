@@ -20,10 +20,12 @@ export function App(): ReactElement {
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
-      const { mode, sheet } = useApp.getState();
+      const { mode, sheet, rack } = useApp.getState();
       // Escape steps back out: first from an open panel, then from the rack to the board.
-      if (mode === 'try' && event.key === 'Escape') {
-        if (sheet) actions.closeSheet();
+      // It leaves text fields alone, and a panel hidden mid-set does not count as open.
+      const typing = event.target instanceof HTMLInputElement;
+      if (mode === 'try' && event.key === 'Escape' && !typing) {
+        if (sheet && !rack.session?.lifting) actions.closeSheet();
         else actions.showFloor();
       }
       if (mode !== 'watch' || isControl(event.target)) return;

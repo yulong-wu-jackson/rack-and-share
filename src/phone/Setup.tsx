@@ -11,7 +11,7 @@ const LEVELS: { value: Experience; label: string }[] = [
 /** First use: the lifter decides what strangers at the rack will see. */
 export function Setup(): ReactElement {
   const name = useApp((state) => state.name);
-  const experience = useApp((state) => state.rack.tags.experience);
+  const experience = useApp((state) => state.tags.experience);
   const [missed, setMissed] = useState(false);
 
   const save = (): void => {

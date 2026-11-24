@@ -37,4 +37,29 @@ describe('best bet', () => {
     expect(tip).toEqual({ kind: 'soonest', id: 4, minutes: 5 });
     expect(tip && tipLine(tip)).toBe('All taken. Rack 4 frees up first, in about 5 min.');
   });
+
+  it('skips a rack open to work in once its line is full', () => {
+    const taken = { ...floor, [HERO_RACK]: liftBar(checkIn(initialRack)) };
+    const waiters = [1, 2, 3].map((id) => ({ id, status: 'queued' as const }));
+    expect(bestBet({ ...taken, 2: { ...taken[2], waiters } })).toEqual({ kind: 'work-in', id: 6 });
+  });
+
+  it('prefers a rack with no line when all are taken', () => {
+    const allBusy = { ...floor };
+    for (const id of RACK_IDS) allBusy[id] = liftBar(setSets(checkIn(initialRack), 3));
+    allBusy[4] = {
+      ...liftBar(setSets(checkIn(initialRack), 1)),
+      waiters: [{ id: 1, status: 'queued' }],
+    };
+    expect(bestBet(allBusy)).toEqual({ kind: 'soonest', id: 1, minutes: 15 });
+  });
+
+  it('says "in a moment" when the last set is done', () => {
+    const closed = { ...initialRack, tags: { ...initialRack.tags, workIn: false } };
+    const allBusy = { ...floor };
+    for (const id of RACK_IDS) allBusy[id] = liftBar(setSets(checkIn(initialRack), 3));
+    allBusy[4] = setSets(checkIn(closed), 0);
+    const tip = bestBet(allBusy);
+    expect(tip && tipLine(tip)).toBe('All taken. Rack 4 frees up in a moment.');
+  });
 });

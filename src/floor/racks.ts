@@ -2,6 +2,7 @@
 
 import {
   GUEST_DEFAULT_TAGS,
+  MAX_WAITERS,
   minutesLeft,
   type Rack,
   type RackStatus,
@@ -101,11 +102,16 @@ export type Tip =
 export function bestBet(floor: Floor): Tip | null {
   const free = RACK_IDS.find((id) => rackStatus(floor[id]) === 'free');
   if (free) return { kind: 'free', id: free };
-  const open = RACK_IDS.find((id) => rackStatus(floor[id]) === 'resting-open');
+  const open = RACK_IDS.find(
+    (id) => rackStatus(floor[id]) === 'resting-open' && floor[id].waiters.length < MAX_WAITERS,
+  );
   if (open) return { kind: 'work-in', id: open };
 
+  // People already in line get a rack first, so racks with no line come first.
+  const taken = RACK_IDS.filter((id) => floor[id].session);
+  const unlined = taken.filter((id) => floor[id].waiters.length === 0);
   let soonest: Extract<Tip, { kind: 'soonest' }> | null = null;
-  for (const id of RACK_IDS) {
+  for (const id of unlined.length > 0 ? unlined : taken) {
     const session = floor[id].session;
     if (!session) continue;
     const minutes = minutesLeft(session);
@@ -116,7 +122,9 @@ export function bestBet(floor: Floor): Tip | null {
 
 export function tipLine(tip: Tip): string {
   if (tip.kind === 'soonest') {
-    return `All taken. Rack ${tip.id} frees up first, in about ${tip.minutes} min.`;
+    return tip.minutes === 0
+      ? `All taken. Rack ${tip.id} frees up in a moment.`
+      : `All taken. Rack ${tip.id} frees up first, in about ${tip.minutes} min.`;
   }
   return tip.kind === 'free'
     ? `Rack ${tip.id} is free. Walk right over.`

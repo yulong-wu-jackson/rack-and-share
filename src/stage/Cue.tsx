@@ -61,6 +61,15 @@ function approach(from: Box, to: Box): Box {
   };
 }
 
+function sameBox(a: Box, b: Box): boolean {
+  return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
+}
+
+function sameShape(a: Shape | null, b: Shape | null): boolean {
+  if (!a || !b) return a === b;
+  return a.radius === b.radius && sameBox(a.ring, b.ring) && sameBox(a.caption, b.caption);
+}
+
 function clamp(value: number, low: number, high: number): number {
   return Math.min(high, Math.max(low, value));
 }
@@ -114,14 +123,21 @@ export function Cue(): ReactElement {
       return;
     }
     let frame = 0;
+    let shown: Shape | null = null;
+    // Re-renders only when the ring or caption has moved.
+    const show = (next: Shape | null): void => {
+      if (sameShape(shown, next)) return;
+      shown = next;
+      setShape(next);
+    };
     const step = (): void => {
       const next = measure(cue);
       if (next) {
         drawn.current = drawn.current ? approach(drawn.current, next.ring) : next.ring;
-        setShape({ ...next, ring: drawn.current });
+        show({ ...next, ring: drawn.current });
       } else {
         drawn.current = null;
-        setShape(null);
+        show(null);
       }
       frame = requestAnimationFrame(step);
     };
