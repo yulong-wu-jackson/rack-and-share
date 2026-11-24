@@ -96,7 +96,7 @@
   transition: opacity 300ms;
 }
 
-.screen[data-occupied] .screen-tray {
+.screen[data-resting] .screen-tray {
   opacity: 1;
 }
 

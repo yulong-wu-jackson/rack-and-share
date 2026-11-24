@@ -338,6 +338,11 @@
   background: #d8dfe9;
 }
 
+.button-icon {
+  width: 46px;
+  padding: 0;
+}
+
 .button-quiet svg {
   width: 20px;
   height: 20px;

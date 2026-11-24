@@ -92,7 +92,8 @@ function Barbell({ y }: { y: number }): ReactElement {
 /** The gym floor: a rack with its screen, the lifter, and whoever is waiting. */
 export function Scene(): ReactElement {
   const frame = useSceneSim();
-  const occupied = useApp((state) => state.rack.session !== null);
+  // Like the station, the screen shows its tray only while the lifter rests.
+  const resting = useApp((state) => state.rack.session?.lifting === false);
   const gaze = useApp((state) => state.gaze);
   const sensorPulse = useApp((state) => state.sensorPulse);
   const nfcPulse = useApp((state) => state.nfcPulse);
@@ -159,7 +160,7 @@ export function Scene(): ReactElement {
         ))}
         <Barbell y={barY} />
 
-        <g className="screen" data-occupied={occupied || undefined}>
+        <g className="screen" data-resting={resting || undefined}>
           <rect
             className="screen-bezel"
             x={SCREEN.x - 3}

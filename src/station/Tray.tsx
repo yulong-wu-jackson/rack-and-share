@@ -83,9 +83,38 @@ function WaiterChips({ rack }: { rack: Rack }): ReactElement | null {
   );
 }
 
+function TrayLink({
+  icon,
+  label,
+  iconOnly,
+  touch,
+  onClick,
+}: {
+  icon: ReactElement;
+  label: string;
+  iconOnly: boolean;
+  touch?: string;
+  onClick: () => void;
+}): ReactElement {
+  return (
+    <button
+      type="button"
+      className={iconOnly ? 'button button-quiet button-icon' : 'button button-quiet'}
+      aria-label={iconOnly ? label : undefined}
+      title={iconOnly ? label : undefined}
+      data-touch={touch}
+      onClick={onClick}
+    >
+      {icon}
+      {!iconOnly && label}
+    </button>
+  );
+}
+
 /** The lower half of the screen: the facts a waiting lifter plans around, and what they can do. */
 export function Tray({ rack }: { rack: Rack }): ReactElement {
   const { session, waiters } = rack;
+  const guest = session?.by === 'guest';
   return (
     <section className="tray">
       {session ? (
@@ -128,24 +157,21 @@ export function Tray({ rack }: { rack: Rack }): ReactElement {
         </div>
       )}
       <div className="tray-links">
-        <button
-          type="button"
-          className="button button-quiet"
-          data-touch="open-guide"
+        {/* Guest buttons need the room, so the shared links shrink to icons and clear the line. */}
+        <TrayLink
+          icon={<BookOpen />}
+          label="Equipment guide"
+          iconOnly={guest}
+          touch="open-guide"
           onClick={() => actions.openSheet('guide')}
-        >
-          <BookOpen />
-          Equipment guide
-        </button>
-        <button
-          type="button"
-          className="button button-quiet"
+        />
+        <TrayLink
+          icon={<ListChecks />}
+          label="House rules"
+          iconOnly={guest}
           onClick={() => actions.openSheet('rules')}
-        >
-          <ListChecks />
-          House rules
-        </button>
-        {session?.by === 'guest' && (
+        />
+        {guest && (
           <>
             <button
               type="button"

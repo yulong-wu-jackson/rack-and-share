@@ -103,12 +103,18 @@ const GUEST_SWITCHES: { tag: ToggleTag; label: string }[] = [
 ];
 
 function GuestSettings({ session }: { session?: Extract<Session, { by: 'guest' }> }): ReactElement {
-  // Store the adjustment so sets started while the panel is open still count.
-  const [setAdjustment, setSetAdjustment] = useState(0);
   const [tags, setTags] = useState(session?.tags ?? GUEST_DEFAULT_TAGS);
-  const originalSets = session?.setsLeft ?? GUEST_DEFAULT_SETS;
+  // The plan counts from when the panel opened, minus each set started since.
+  const [planned, setPlanned] = useState(session?.setsLeft ?? GUEST_DEFAULT_SETS);
+  const [started, setStarted] = useState(0);
+  const lifting = session?.lifting ?? false;
+  const [wasLifting, setWasLifting] = useState(lifting);
+  if (lifting !== wasLifting) {
+    setWasLifting(lifting);
+    if (lifting) setStarted(started + 1);
+  }
   const minimum = session ? 0 : 1;
-  const sets = Math.min(MAX_SETS, Math.max(minimum, originalSets + setAdjustment));
+  const sets = Math.min(MAX_SETS, Math.max(minimum, planned - started));
 
   return (
     <div className="guest">
@@ -123,7 +129,7 @@ function GuestSettings({ session }: { session?: Extract<Session, { by: 'guest' }
                 type="button"
                 aria-label="One set fewer"
                 disabled={sets <= minimum}
-                onClick={() => setSetAdjustment(sets - 1 - originalSets)}
+                onClick={() => setPlanned(sets - 1 + started)}
               >
                 <Minus />
               </button>
@@ -132,7 +138,7 @@ function GuestSettings({ session }: { session?: Extract<Session, { by: 'guest' }
                 type="button"
                 aria-label="One set more"
                 disabled={sets >= MAX_SETS}
-                onClick={() => setSetAdjustment(sets + 1 - originalSets)}
+                onClick={() => setPlanned(sets + 1 + started)}
               >
                 <Plus />
               </button>

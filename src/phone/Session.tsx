@@ -36,7 +36,7 @@ export function Session(): ReactElement | null {
   if (!session) return null;
   const { setsLeft, lifting } = session;
   const displayedSets = draftSets ?? setsLeft;
-  const done = setsLeft === 0 && !lifting;
+  const done = displayedSets === 0 && !lifting;
 
   return (
     <div className="phone-view phone-session">
@@ -57,7 +57,7 @@ export function Session(): ReactElement | null {
         >
           <Minus />
         </button>
-        <div className="phone-count">
+        <div className="phone-count" aria-live="polite" aria-atomic="true">
           <span key={displayedSets} className="phone-number">
             {displayedSets}
           </span>

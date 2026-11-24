@@ -141,10 +141,14 @@ export const actions = {
   liftBar(): void {
     set((state) => {
       const rack = model.liftBar(state.rack);
-      // A new set makes the unconfirmed count stale.
+      // A new set uses up one of the previewed sets too.
+      const draft =
+        state.draftSets === null || rack === state.rack
+          ? state.draftSets
+          : Math.max(0, state.draftSets - 1);
       return {
         rack,
-        draftSets: rack === state.rack ? state.draftSets : null,
+        draftSets: draft === rack.session?.setsLeft ? null : draft,
         sensorPulse: state.sensorPulse + 1,
       };
     });
@@ -211,17 +215,20 @@ export function spots(state: AppState): Record<Persona, Spot> {
   const other: Persona = first === 'marcus' ? 'maya' : 'marcus';
   const result: Record<Persona, Spot> = { marcus: 'away', maya: 'away' };
   const session = state.rack.session;
-  const usingScreen = state.sheet !== null;
+  // Mid-set the screen hides any open sheet, so nobody is using it.
+  const usingScreen = state.sheet !== null && !session?.lifting;
+  // A guest edits their own settings; any other sheet is for whoever is not lifting.
+  const lifterAtScreen = usingScreen && state.sheet === 'guest-edit';
   const otherHere = state.present[other];
   const sharing = state.rack.waiters.some((waiter) => waiter.status === 'sharing');
 
   if (otherHere) {
-    result[other] = usingScreen ? 'station' : sharing ? 'near' : 'side';
+    result[other] = usingScreen && !lifterAtScreen ? 'station' : sharing ? 'near' : 'side';
   }
   if (state.present[first]) {
     if (session) {
-      // The lifter only steps out to the screen when nobody else is there to use it.
-      result[first] = usingScreen && !otherHere && !session.lifting ? 'station' : 'rack';
+      // Otherwise the lifter only steps out to the screen when nobody else is there to use it.
+      result[first] = lifterAtScreen || (usingScreen && !otherHere) ? 'station' : 'rack';
     } else if (usingScreen) {
       result[first] = otherHere ? 'near' : 'station';
     } else {
