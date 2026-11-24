@@ -144,17 +144,27 @@ describe('floor and racks', () => {
     expect(state().mine).toBe(3);
   });
 
-  it('holds the racks the viewer changed and runs the rest', () => {
+  it('holds the rack running your session and runs the rest', () => {
     actions.enterRack(3);
     actions.phoneTap();
     const mine = state().rack;
-    actions.enterRack(1);
+    actions.enterRack(2);
+    actions.joinLine('work-in');
     actions.showFloor();
     const before = state().floor;
     for (let second = 0; second < 40; second += 1) actions.tickFloor();
     expect(state().held).toEqual([HERO_RACK]);
     expect(state().floor[HERO_RACK]).toBe(mine);
-    expect(state().floor[1]).not.toBe(before[1]);
+    expect(state().floor[2]).not.toBe(before[2]);
+  });
+
+  it('applies tag changes to your session while you are away from it', () => {
+    actions.enterRack(3);
+    actions.phoneTap();
+    actions.enterRack(2);
+    actions.setTag('workIn', false);
+    expect(state().floor[HERO_RACK].tags.workIn).toBe(false);
+    expect(state().rack.tags.workIn).toBe(true);
   });
 
   it('runs the rack in focus while the viewer is on the board', () => {

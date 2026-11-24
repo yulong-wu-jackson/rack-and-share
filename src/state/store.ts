@@ -25,7 +25,7 @@ export interface AppState {
   rack: Rack;
   floor: Floor;
   beats: ambient.Beats;
-  /** Racks the viewer has changed. They wait for the viewer instead of running on their own. */
+  /** Racks running a session the viewer started. They wait for the viewer instead of running on. */
   held: RackId[];
   /** The rack the viewer's phone is checked in on. */
   mine: RackId | null;
@@ -105,22 +105,23 @@ function updateRack(change: (rack: Rack) => Rack): void {
   set((state) => ({ rack: change(state.rack) }));
 }
 
-/** Puts the rack in focus back on the floor, and holds it there if the viewer changed it. */
-function leaveRack(state: AppState): Pick<AppState, 'floor' | 'held'> {
-  const { rackId, rack } = state;
-  if (rack === state.floor[rackId]) return { floor: state.floor, held: state.held };
-  return {
-    floor: { ...state.floor, [rackId]: rack },
-    held: state.held.includes(rackId) ? state.held : [...state.held, rackId],
-  };
+/** Puts the rack in focus back on the floor. */
+function leaveRack(state: AppState): Floor {
+  return { ...state.floor, [state.rackId]: state.rack };
 }
 
-/** Changes the viewer's tags, and their live session's too when they are at it. */
+function hold(held: RackId[], id: RackId): RackId[] {
+  return held.includes(id) ? held : [...held, id];
+}
+
+/** Changes the viewer's tags, and the session they are checked in on, wherever it is. */
 function updateTags(tags: model.Tags, change: (rack: Rack) => Rack): void {
-  set((state) => ({
-    tags,
-    rack: state.mine === state.rackId ? change(state.rack) : state.rack,
-  }));
+  set((state) => {
+    const { mine, rackId } = state;
+    if (mine === null) return { tags };
+    if (mine === rackId) return { tags, rack: change(state.rack) };
+    return { tags, floor: { ...state.floor, [mine]: change(state.floor[mine]) } };
+  });
 }
 
 export const actions = {
@@ -144,14 +145,13 @@ export const actions = {
   /** Walks from the board to one rack. */
   enterRack(id: RackId): void {
     set((state) => {
-      const { floor, held } = leaveRack(state);
+      const floor = leaveRack(state);
       const rack = floor[id];
       return {
         view: 'rack',
         rackId: id,
         rack,
         floor,
-        held,
         sheet: null,
         draftSets: null,
         atRack: rack.session?.by === 'guest' ? 'maya' : 'marcus',
@@ -163,13 +163,13 @@ export const actions = {
   showFloor(): void {
     set((state) => ({
       view: 'floor',
-      ...leaveRack(state),
+      floor: leaveRack(state),
       sheet: null,
       draftSets: null,
       touches: { marcus: null, maya: null },
     }));
   },
-  /** One second passes for every rack the viewer is not standing at and has not changed. */
+  /** One second passes for every rack the viewer is not standing at or holding a session on. */
   tickFloor(): void {
     set((state) => {
       if (state.mode === 'watch' && !state.playing) return state;
@@ -206,6 +206,7 @@ export const actions = {
       return {
         rack: checkIn ? model.checkIn({ ...state.rack, tags: state.tags }) : state.rack,
         mine: checkIn ? state.rackId : state.mine,
+        held: checkIn ? hold(state.held, state.rackId) : state.held,
         atRack: checkIn ? 'marcus' : state.atRack,
         sheet: null,
         nfcPulse: state.nfcPulse + 1,
@@ -213,11 +214,15 @@ export const actions = {
     });
   },
   startGuest(sets: number, tags?: model.Tags): void {
-    set((state) => ({
-      rack: model.startGuest(state.rack, sets, tags),
-      atRack: 'maya',
-      sheet: null,
-    }));
+    set((state) => {
+      const rack = model.startGuest(state.rack, sets, tags);
+      return {
+        rack,
+        held: rack === state.rack ? state.held : hold(state.held, state.rackId),
+        atRack: 'maya',
+        sheet: null,
+      };
+    });
   },
   updateGuestSettings(sets: number, tags: model.Tags): void {
     set((state) => ({ rack: model.updateGuestSettings(state.rack, sets, tags), sheet: null }));
@@ -226,6 +231,7 @@ export const actions = {
     set((state) => ({
       rack: model.endSession(state.rack),
       mine: state.mine === state.rackId ? null : state.mine,
+      held: state.held.filter((id) => id !== state.rackId),
       draftSets: null,
       sheet: state.sheet === 'guest-edit' ? null : state.sheet,
     }));

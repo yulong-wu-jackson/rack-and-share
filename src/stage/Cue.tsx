@@ -116,20 +116,21 @@ export function Cue(): ReactElement {
   const caption = useApp((state) => state.caption);
   const [shape, setShape] = useState<Shape | null>(null);
   const drawn = useRef<Box | null>(null);
+  /** What is on screen now, kept across cues so a hidden next target clears the old ring. */
+  const shown = useRef<Shape | null>(null);
 
   useEffect(() => {
+    // Re-renders only when the ring or caption has moved.
+    const show = (next: Shape | null): void => {
+      if (sameShape(shown.current, next)) return;
+      shown.current = next;
+      setShape(next);
+    };
     if (!cue) {
-      setShape(null);
+      show(null);
       return;
     }
     let frame = 0;
-    let shown: Shape | null = null;
-    // Re-renders only when the ring or caption has moved.
-    const show = (next: Shape | null): void => {
-      if (sameShape(shown, next)) return;
-      shown = next;
-      setShape(next);
-    };
     const step = (): void => {
       const next = measure(cue);
       if (next) {

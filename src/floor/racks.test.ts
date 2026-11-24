@@ -54,6 +54,15 @@ describe('best bet', () => {
     expect(bestBet(allBusy)).toEqual({ kind: 'soonest', id: 1, minutes: 15 });
   });
 
+  it('skips racks with a full line when all are taken', () => {
+    const full = [1, 2, 3].map((id) => ({ id, status: 'queued' as const }));
+    const busy = (sets: number) => liftBar(setSets(checkIn(initialRack), sets));
+    const allBusy = { ...floor };
+    for (const id of RACK_IDS) allBusy[id] = { ...busy(id === 1 ? 1 : 3), waiters: full };
+    allBusy[4] = { ...busy(5), waiters: [full[0]] };
+    expect(bestBet(allBusy)).toEqual({ kind: 'soonest', id: 4, minutes: 25 });
+  });
+
   it('says "in a moment" when the last set is done', () => {
     const closed = { ...initialRack, tags: { ...initialRack.tags, workIn: false } };
     const allBusy = { ...floor };

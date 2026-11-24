@@ -107,11 +107,13 @@ export function bestBet(floor: Floor): Tip | null {
   );
   if (open) return { kind: 'work-in', id: open };
 
-  // People already in line get a rack first, so racks with no line come first.
-  const taken = RACK_IDS.filter((id) => floor[id].session);
-  const unlined = taken.filter((id) => floor[id].waiters.length === 0);
+  // Only racks with room in line count, and people already waiting get a rack first.
+  const joinable = RACK_IDS.filter(
+    (id) => floor[id].session && floor[id].waiters.length < MAX_WAITERS,
+  );
+  const unlined = joinable.filter((id) => floor[id].waiters.length === 0);
   let soonest: Extract<Tip, { kind: 'soonest' }> | null = null;
-  for (const id of unlined.length > 0 ? unlined : taken) {
+  for (const id of unlined.length > 0 ? unlined : joinable) {
     const session = floor[id].session;
     if (!session) continue;
     const minutes = minutesLeft(session);
