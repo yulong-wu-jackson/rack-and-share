@@ -46,6 +46,15 @@ describe('set count preview', () => {
     expect(state().draftSets).toBe(2);
   });
 
+  it('counts a set started from zero against a raised preview', () => {
+    actions.adjustSets(-5);
+    actions.confirmSets();
+    actions.adjustSets(2);
+    actions.liftBar();
+    expect(state().rack.session?.setsLeft).toBe(0);
+    expect(state().draftSets).toBe(1);
+  });
+
   it('drops a zero preview once the last set starts', () => {
     actions.adjustSets(-4);
     actions.confirmSets();

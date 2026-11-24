@@ -92,7 +92,7 @@ function Barbell({ y }: { y: number }): ReactElement {
 /** The gym floor: a rack with its screen, the lifter, and whoever is waiting. */
 export function Scene(): ReactElement {
   const frame = useSceneSim();
-  // Like the station, the screen shows its tray only while the lifter rests.
+  // The miniature tray shows only while the lifter rests, so it clears with the mid-set screen.
   const resting = useApp((state) => state.rack.session?.lifting === false);
   const gaze = useApp((state) => state.gaze);
   const sensorPulse = useApp((state) => state.sensorPulse);
