@@ -1,7 +1,15 @@
 import { ArrowDownToLine, ArrowUpFromLine, Nfc } from 'lucide-react';
 import { type ReactElement, useState } from 'react';
 import { rackStatus } from '../state/model';
-import { type AppState, actions, lifterName, phoneScreen, useApp } from '../state/store';
+import {
+  type AppState,
+  actions,
+  checkedInElsewhere,
+  lifterName,
+  ownSession,
+  phoneScreen,
+  useApp,
+} from '../state/store';
 import { flyPhoneToStation } from './phoneTap';
 
 type WorldAction = 'tap-phone' | 'lift' | 'rack';
@@ -15,7 +23,14 @@ const ACTIONS: Record<WorldAction, { label: string; icon: ReactElement; run(): P
   'tap-phone': {
     label: 'Tap phone on rack',
     icon: <Nfc />,
-    run: () => flyPhoneToStation(actions.phoneTap),
+    run: () => {
+      // The viewer may walk away while the phone is in the air; the tap only counts where it began.
+      const { rackId } = useApp.getState();
+      return flyPhoneToStation(() => {
+        const now = useApp.getState();
+        if (now.view === 'rack' && now.rackId === rackId) actions.phoneTap();
+      });
+    },
   },
   lift: {
     label: 'Start a set',
@@ -31,21 +46,31 @@ const ACTIONS: Record<WorldAction, { label: string; icon: ReactElement; run(): P
 
 /** In Try mode the line describes the gym floor and offers the next physical action. */
 function promptFor(state: AppState): Prompt {
+  if (state.view === 'floor') {
+    return { headline: 'Pick a rack on the board to walk over to it.', action: null };
+  }
   const session = state.rack.session;
   if (!session) {
+    const elsewhere = checkedInElsewhere(state);
+    if (elsewhere !== null) {
+      return { headline: `You're checked in on Rack ${elsewhere}.`, action: null };
+    }
     if (phoneScreen(state) === 'setup') {
       return { headline: 'Start with your phone or at the station.', action: null };
     }
+    const rack = `Rack ${state.rackId}`;
     const free = rackStatus(state.rack) === 'free';
     return {
-      headline: free ? 'Rack 3 is free.' : 'Rack 3 is free for the next in line.',
+      headline: free ? `${rack} is free.` : `${rack} is free for the next in line.`,
       action: 'tap-phone',
     };
   }
   const name = lifterName(state);
+  // Other lifters run their own workouts; the viewer only lifts in sessions they started.
+  const own = ownSession(state);
   return session.lifting
-    ? { headline: `${name} is mid-set.`, action: 'rack' }
-    : { headline: `${name} is resting.`, action: 'lift' };
+    ? { headline: `${name} is mid-set.`, action: own ? 'rack' : null }
+    : { headline: `${name} is resting.`, action: own ? 'lift' : null };
 }
 
 export function Narration(): ReactElement {

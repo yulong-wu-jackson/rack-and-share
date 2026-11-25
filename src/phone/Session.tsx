@@ -11,7 +11,12 @@ function unit(setsLeft: number, lifting: boolean): string {
 
 function Request({ open }: { open: boolean }): ReactElement {
   return (
-    <div className="phone-request" data-open={open ? '' : undefined} inert={!open}>
+    <div
+      className="phone-request"
+      data-cue="phone-request"
+      data-open={open ? '' : undefined}
+      inert={!open}
+    >
       <h3>Someone wants to work in.</h3>
       <button
         type="button"
@@ -33,6 +38,7 @@ export function Session(): ReactElement | null {
   const session = useApp((state) => state.rack.session);
   const draftSets = useApp((state) => state.draftSets);
   const asked = useApp((state) => pendingRequest(state.rack) !== null);
+  const rackId = useApp((state) => state.rackId);
   if (!session) return null;
   const { setsLeft, lifting } = session;
   const displayedSets = draftSets ?? setsLeft;
@@ -41,13 +47,13 @@ export function Session(): ReactElement | null {
   return (
     <div className="phone-view phone-session">
       <header className="phone-head">
-        <h2 className="phone-title">Rack 3</h2>
+        <h2 className="phone-title">Rack {rackId}</h2>
         <span className="phone-state" data-lifting={lifting || undefined}>
           {lifting ? 'Mid-set' : 'Resting'}
         </span>
       </header>
 
-      <div className="phone-counter">
+      <div className="phone-counter" data-cue="phone-counter">
         <button
           type="button"
           aria-label="One set fewer"

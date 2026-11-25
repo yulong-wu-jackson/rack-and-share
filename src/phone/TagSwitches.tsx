@@ -16,7 +16,7 @@ const TAGS: { tag: ToggleTag; label: string; icon: ReactElement }[] = [
 
 /** The three tags a lifter can switch at any time, also mid-session. */
 export function TagSwitches(): ReactElement {
-  const tags = useApp((state) => state.rack.tags);
+  const tags = useApp((state) => state.tags);
   return (
     <ul className="tag-switches">
       {TAGS.map(({ tag, label, icon }) => (

@@ -1,4 +1,4 @@
-import { Pause, Play, RotateCcw } from 'lucide-react';
+import { ChevronRight, LayoutGrid, Pause, Play, RotateCcw } from 'lucide-react';
 import type { ReactElement } from 'react';
 import lockup from '../assets/lockup.svg';
 import { director } from '../director/director';
@@ -37,11 +37,36 @@ function Transport(): ReactElement {
   );
 }
 
+/** Up close, the way back to the board. */
+function Crumbs(): ReactElement | null {
+  const view = useApp((state) => state.view);
+  const rackId = useApp((state) => state.rackId);
+  const watching = useApp((state) => state.mode === 'watch');
+  if (view === 'floor') return null;
+  const back = (): void => {
+    if (watching) director.handOver();
+    actions.showFloor();
+  };
+  return (
+    <nav className="crumbs" aria-label="Where you are">
+      <button type="button" className="crumb-back" data-cue="floor-back" onClick={back}>
+        <LayoutGrid aria-hidden="true" />
+        All racks
+      </button>
+      <ChevronRight className="crumb-sep" aria-hidden="true" />
+      <span aria-current="page">Rack {rackId}</span>
+    </nav>
+  );
+}
+
 export function TopBar(): ReactElement {
   const watching = useApp((state) => state.mode === 'watch');
   return (
     <header className="topbar">
-      <img className="brand" src={lockup} alt="Rack & Share" />
+      <div className="topbar-start">
+        <img className="brand" src={lockup} alt="Rack & Share" />
+        <Crumbs />
+      </div>
       <div className="controls">
         {watching && <Transport />}
         <div className="mode-switch">
@@ -50,6 +75,7 @@ export function TopBar(): ReactElement {
           </button>
           <button
             type="button"
+            data-cue="mode-try"
             aria-pressed={!watching}
             onClick={() => watching && director.handOver()}
           >

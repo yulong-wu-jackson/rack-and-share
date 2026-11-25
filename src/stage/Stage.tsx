@@ -1,10 +1,13 @@
 import { type ReactElement, useEffect, useState } from 'react';
 import { director } from '../director/director';
+import { ARRIVAL_CHAPTER } from '../director/script';
+import { Floor } from '../floor/Floor';
 import { Phone } from '../phone/Phone';
 import { Scene } from '../scene/Scene';
 import { rackStatus } from '../state/model';
 import { useApp } from '../state/store';
 import { Station } from '../station/Station';
+import { Cue } from './Cue';
 import { PHONE_ID, STAGE_ID, STATION_ID } from './geometry';
 import { Narration } from './Narration';
 import './stage.css';
@@ -43,10 +46,11 @@ export function Stage(): ReactElement {
   const { portrait, scale } = useFit();
   const size = portrait ? PORTRAIT : LANDSCAPE;
   const status = useApp((state) => rackStatus(state.rack));
+  const view = useApp((state) => state.view);
   const watching = useApp((state) => state.mode === 'watch');
   const nfcPulse = useApp((state) => state.nfcPulse);
   // The phone is Marcus's. Before he arrives it still shows, so only a departure hides it.
-  const ownerAway = useApp((state) => !state.present.marcus && state.chapter > 0);
+  const ownerAway = useApp((state) => !state.present.marcus && state.chapter > ARRIVAL_CHAPTER);
   // While the story plays, a click on a device hands control to the viewer.
   const takeOver = watching ? director.handOver : undefined;
 
@@ -57,35 +61,41 @@ export function Stage(): ReactElement {
           id={STAGE_ID}
           className="stage"
           data-status={status}
+          data-view={view}
           style={{ transform: `scale(${scale})` }}
         >
+          <Floor />
+          <div className="rack-view" inert={view !== 'rack'}>
+            <div className="scene-band">
+              <Scene />
+            </div>
+            {/* biome-ignore lint/a11y/noStaticElementInteractions: catches the click that takes over from the story */}
+            {/* biome-ignore lint/a11y/useKeyWithClickEvents: keyboard users take over with the mode switch */}
+            <div
+              id={STATION_ID}
+              className="device tablet"
+              data-locked={watching || undefined}
+              onClick={takeOver}
+            >
+              <Station />
+            </div>
+            {nfcPulse > 0 && <div key={nfcPulse} className="nfc-contact" />}
+            {/* biome-ignore lint/a11y/noStaticElementInteractions: catches the click that takes over from the story */}
+            {/* biome-ignore lint/a11y/useKeyWithClickEvents: keyboard users take over with the mode switch */}
+            <div
+              id={PHONE_ID}
+              className="device phone"
+              data-locked={watching || undefined}
+              data-away={ownerAway || undefined}
+              onClick={takeOver}
+            >
+              <Phone />
+            </div>
+          </div>
+          {/* After the full-stage views, so neither covers its buttons. */}
           <TopBar />
-          <div className="scene-band">
-            <Scene />
-          </div>
           <Narration />
-          {/* biome-ignore lint/a11y/noStaticElementInteractions: catches the click that takes over from the story */}
-          {/* biome-ignore lint/a11y/useKeyWithClickEvents: keyboard users take over with the mode switch */}
-          <div
-            id={STATION_ID}
-            className="device tablet"
-            data-locked={watching || undefined}
-            onClick={takeOver}
-          >
-            <Station />
-          </div>
-          {nfcPulse > 0 && <div key={nfcPulse} className="nfc-contact" />}
-          {/* biome-ignore lint/a11y/noStaticElementInteractions: catches the click that takes over from the story */}
-          {/* biome-ignore lint/a11y/useKeyWithClickEvents: keyboard users take over with the mode switch */}
-          <div
-            id={PHONE_ID}
-            className="device phone"
-            data-locked={watching || undefined}
-            data-away={ownerAway || undefined}
-            onClick={takeOver}
-          >
-            <Phone />
-          </div>
+          <Cue />
           <TouchDots />
         </div>
       </div>

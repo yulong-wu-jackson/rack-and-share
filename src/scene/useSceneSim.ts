@@ -79,6 +79,11 @@ export function useSceneSim(): SceneFrame {
       const dt = Math.min(MAX_STEP_SECONDS, (now - last) / 1000);
       last = now;
       const state = useApp.getState();
+      // Behind the board nobody sees the scene, so it waits.
+      if (state.view !== 'rack') {
+        raf = requestAnimationFrame(step);
+        return;
+      }
       const where = spots(state);
       const cut = lastCut.current !== state.sceneCut;
       lastCut.current = state.sceneCut;

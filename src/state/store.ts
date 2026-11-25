@@ -1,8 +1,12 @@
 import { create } from 'zustand';
+import * as ambient from '../floor/ambient';
+import { type Floor, HERO_RACK, type RackId, seedFloor } from '../floor/racks';
 import type { Experience, Rack, ToggleTag, WaitKind } from './model';
 import * as model from './model';
 
 export type Mode = 'watch' | 'try';
+/** The board by the door, or one rack up close. */
+export type View = 'floor' | 'rack';
 export type Sheet = 'guide' | 'rules' | 'wait' | 'guest' | 'guest-edit';
 export type Persona = 'marcus' | 'maya';
 export type PhoneScreen = 'setup' | 'ready' | 'session';
@@ -15,8 +19,19 @@ export interface Touch {
 }
 
 export interface AppState {
+  view: View;
+  /** The rack in focus. `rack` is its live state; `floor` holds the others. */
+  rackId: RackId;
   rack: Rack;
+  floor: Floor;
+  beats: ambient.Beats;
+  /** Racks running a session the viewer started. They wait for the viewer instead of running on. */
+  held: RackId[];
+  /** The rack the viewer's phone is checked in on. */
+  mine: RackId | null;
   name: string;
+  /** The viewer's own tags. A rack takes them when the viewer's phone checks in there. */
+  tags: model.Tags;
   tagsSaved: boolean;
   sheet: Sheet | null;
   draftSets: number | null;
@@ -25,6 +40,8 @@ export interface AppState {
   playing: boolean;
   chapter: number;
   caption: string;
+  /** The `data-cue` (or `data-touch`) name of the element the caption talks about. */
+  cue: string | null;
 
   /** Who is on the gym floor, and who stands in the rack. */
   present: Record<Persona, boolean>;
@@ -46,9 +63,17 @@ const WATCH_TAGS: model.Tags = {
 
 function initialState(mode: Mode): AppState {
   const watching = mode === 'watch';
+  const floor = seedFloor(model.initialRack);
   return {
-    rack: watching ? { ...model.initialRack, tags: WATCH_TAGS } : model.initialRack,
+    view: 'floor',
+    rackId: HERO_RACK,
+    rack: floor[HERO_RACK],
+    floor,
+    beats: ambient.initialBeats(),
+    held: [],
+    mine: null,
     name: 'Marcus',
+    tags: watching ? WATCH_TAGS : model.initialRack.tags,
     tagsSaved: watching,
     sheet: null,
     draftSets: null,
@@ -56,6 +81,7 @@ function initialState(mode: Mode): AppState {
     playing: watching,
     chapter: 0,
     caption: '',
+    cue: null,
     present: { marcus: !watching, maya: !watching },
     atRack: 'marcus',
     gaze: false,
@@ -79,6 +105,30 @@ function updateRack(change: (rack: Rack) => Rack): void {
   set((state) => ({ rack: change(state.rack) }));
 }
 
+/** Puts the rack in focus back on the floor. */
+function leaveRack(state: AppState): Floor {
+  return { ...state.floor, [state.rackId]: state.rack };
+}
+
+/** Who stands in the rack: guests are drawn as Maya, phone users as Marcus. */
+function lifterAt(rack: Rack): Persona {
+  return rack.session?.by === 'guest' ? 'maya' : 'marcus';
+}
+
+function hold(held: RackId[], id: RackId): RackId[] {
+  return held.includes(id) ? held : [...held, id];
+}
+
+/** Changes the viewer's tags, and the session they are checked in on, wherever it is. */
+function updateTags(tags: model.Tags, change: (rack: Rack) => Rack): void {
+  set((state) => {
+    const { mine, rackId } = state;
+    if (mine === null) return { tags };
+    if (mine === rackId) return { tags, rack: change(state.rack) };
+    return { tags, floor: { ...state.floor, [mine]: change(state.floor[mine]) } };
+  });
+}
+
 export const actions = {
   reset(mode: Mode): void {
     set({ ...initialState(mode), sceneCut: get().sceneCut + 1 });
@@ -90,9 +140,53 @@ export const actions = {
       mode: 'try',
       playing: false,
       caption: '',
+      cue: null,
       gaze: false,
       touches: { marcus: null, maya: null },
       present: { marcus: true, maya: true },
+    });
+  },
+
+  /** Walks from the board to one rack. */
+  enterRack(id: RackId): void {
+    set((state) => {
+      const floor = leaveRack(state);
+      const rack = floor[id];
+      return {
+        view: 'rack',
+        rackId: id,
+        rack,
+        floor,
+        sheet: null,
+        draftSets: null,
+        atRack: lifterAt(rack),
+        touches: { marcus: null, maya: null },
+        sceneCut: state.sceneCut + 1,
+      };
+    });
+  },
+  showFloor(): void {
+    set((state) => ({
+      view: 'floor',
+      floor: leaveRack(state),
+      sheet: null,
+      draftSets: null,
+      touches: { marcus: null, maya: null },
+    }));
+  },
+  /** One second passes for every rack except those running the viewer's sessions. */
+  tickFloor(): void {
+    set((state) => {
+      if (state.mode === 'watch' && !state.playing) return state;
+      const { rackId, rack, held } = state;
+      // Up close, a free rack waits for the viewer. Anyone else's workout carries on.
+      const waits = state.view === 'rack' && !rack.session;
+      const floor = { ...state.floor, [rackId]: rack };
+      const next = ambient.tick(floor, state.beats, waits ? [rackId, ...held] : held);
+      if (!next.changed) return { beats: next.beats };
+      const focused = next.floor[rackId];
+      if (focused === rack) return { floor: next.floor, beats: next.beats };
+      return { floor: next.floor, beats: next.beats, rack: focused, atRack: lifterAt(focused) };
     });
   },
 
@@ -100,10 +194,10 @@ export const actions = {
     set({ name });
   },
   setExperience(experience: Experience): void {
-    updateRack((rack) => model.setExperience(rack, experience));
+    updateTags({ ...get().tags, experience }, (rack) => model.setExperience(rack, experience));
   },
   setTag(tag: ToggleTag, on: boolean): void {
-    updateRack((rack) => model.setTag(rack, tag, on));
+    updateTags({ ...get().tags, [tag]: on }, (rack) => model.setTag(rack, tag, on));
   },
   saveTags(): void {
     set({ tagsSaved: true });
@@ -112,20 +206,30 @@ export const actions = {
     set({ tagsSaved: false });
   },
 
+  /** Checks the viewer in with their tags, if the rack is free and the phone is not in use elsewhere. */
   phoneTap(): void {
-    set((state) => ({
-      rack: model.checkIn(state.rack),
-      atRack: state.rack.session ? state.atRack : 'marcus',
-      sheet: null,
-      nfcPulse: state.nfcPulse + 1,
-    }));
+    set((state) => {
+      const checkIn = !state.rack.session && state.mine === null;
+      return {
+        rack: checkIn ? model.checkIn({ ...state.rack, tags: state.tags }) : state.rack,
+        mine: checkIn ? state.rackId : state.mine,
+        held: checkIn ? hold(state.held, state.rackId) : state.held,
+        atRack: checkIn ? 'marcus' : state.atRack,
+        sheet: null,
+        nfcPulse: state.nfcPulse + 1,
+      };
+    });
   },
   startGuest(sets: number, tags?: model.Tags): void {
-    set((state) => ({
-      rack: model.startGuest(state.rack, sets, tags),
-      atRack: 'maya',
-      sheet: null,
-    }));
+    set((state) => {
+      const rack = model.startGuest(state.rack, sets, tags);
+      return {
+        rack,
+        held: rack === state.rack ? state.held : hold(state.held, state.rackId),
+        atRack: 'maya',
+        sheet: null,
+      };
+    });
   },
   updateGuestSettings(sets: number, tags: model.Tags): void {
     set((state) => ({ rack: model.updateGuestSettings(state.rack, sets, tags), sheet: null }));
@@ -133,6 +237,8 @@ export const actions = {
   endSession(): void {
     set((state) => ({
       rack: model.endSession(state.rack),
+      mine: state.mine === state.rackId ? null : state.mine,
+      held: state.held.filter((id) => id !== state.rackId),
       draftSets: null,
       sheet: state.sheet === 'guest-edit' ? null : state.sheet,
     }));
@@ -201,11 +307,23 @@ export const actions = {
 };
 
 export function phoneScreen(state: AppState): PhoneScreen {
-  if (state.rack.session?.by === 'phone') return 'session';
+  if (state.mine === state.rackId) return 'session';
   return state.tagsSaved ? 'ready' : 'setup';
 }
 
+/** The rack the viewer's phone is checked in on, when that is not the rack in focus. */
+export function checkedInElsewhere(state: AppState): RackId | null {
+  return state.mine === state.rackId ? null : state.mine;
+}
+
+/** Whether the session at the rack in focus is one the viewer started, by phone or at the station. */
+export function ownSession(state: AppState): boolean {
+  return state.held.includes(state.rackId);
+}
+
 export function lifterName(state: AppState): string {
+  // Anyone else in the rack is someone the viewer does not know.
+  if (!ownSession(state)) return 'The lifter';
   return state.atRack === 'marcus' ? state.name.trim() || 'Marcus' : 'Maya';
 }
 

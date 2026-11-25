@@ -55,6 +55,53 @@
   height: 24px;
 }
 
+.topbar-start,
+.crumbs {
+  display: flex;
+  align-items: center;
+}
+
+.topbar-start {
+  gap: 22px;
+}
+
+.crumbs {
+  gap: 6px;
+  font-size: 16px;
+  font-weight: 700;
+  animation: caption-in 420ms var(--ease-out) both;
+}
+
+.crumb-back {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 16px 0 12px;
+  border-radius: 18px;
+  background: rgb(255 255 255 / 0.1);
+  color: var(--text-soft);
+  transition:
+    background 160ms,
+    color 160ms;
+}
+
+.crumb-back:hover {
+  background: rgb(255 255 255 / 0.18);
+  color: var(--text);
+}
+
+.crumb-back svg {
+  width: 18px;
+  height: 18px;
+}
+
+.crumb-sep {
+  width: 18px;
+  height: 18px;
+  color: var(--text-soft);
+}
+
 .controls,
 .transport {
   display: flex;
@@ -306,6 +353,116 @@
   }
 }
 
+/* Views: the board zooms into the chosen rack, and the rack shrinks back into the board. */
+
+.floor-view,
+.rack-view {
+  position: absolute;
+  inset: 0;
+  transition:
+    opacity 520ms var(--ease-out) 180ms,
+    transform 820ms var(--ease-out),
+    visibility 0s;
+}
+
+.floor-view {
+  transform-origin: var(--zoom-x, 50%) var(--zoom-y, 50%);
+}
+
+.rack-view {
+  transform-origin: 507px 596px;
+}
+
+[data-layout='portrait'] .rack-view {
+  transform-origin: 410px 724px;
+}
+
+.stage[data-view='rack'] .floor-view,
+.stage[data-view='floor'] .rack-view {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 380ms var(--ease-in-out),
+    transform 820ms var(--ease-in-out),
+    visibility 0s linear 820ms;
+}
+
+.stage[data-view='rack'] .floor-view {
+  transform: scale(3.2);
+}
+
+.stage[data-view='floor'] .rack-view {
+  transform: scale(0.84);
+}
+
+/* Cue: a ring on what the caption talks about, and a line back to the caption. */
+
+.cue {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  fill: none;
+  stroke-linecap: round;
+}
+
+.cue-mark {
+  animation: cue-in 360ms var(--ease-out) both;
+}
+
+@keyframes cue-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* A dark halo under every white stroke keeps it legible on the white screen and the dark floor. */
+.cue-halo {
+  stroke: var(--night);
+  stroke-opacity: 0.7;
+  stroke-width: 7;
+}
+
+.cue-ring,
+.cue-line {
+  stroke: var(--white);
+  stroke-width: 3;
+}
+
+.cue-trace {
+  stroke-dasharray: 1;
+  animation: cue-trace 620ms var(--ease-out) 80ms both;
+}
+
+@keyframes cue-trace {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* A glow that swells from the ring outward, the same width on a button or a whole screen. */
+.cue-pulse {
+  stroke: var(--white);
+  animation: cue-pulse 1600ms var(--ease-out) 400ms infinite;
+}
+
+@keyframes cue-pulse {
+  from {
+    stroke-opacity: 0.6;
+    stroke-width: 3;
+  }
+  to {
+    stroke-opacity: 0;
+    stroke-width: 22;
+  }
+}
+
 /* Fingertips shown while the story plays */
 
 .touch {
@@ -357,6 +514,11 @@
 
 [data-layout='portrait'] .topbar {
   inset-inline: 24px;
+}
+
+/* Up close the breadcrumbs take the logo's place, so the story controls still fit. */
+[data-layout='portrait'] .stage[data-view='rack'] .brand {
+  display: none;
 }
 
 [data-layout='portrait'] .narration {

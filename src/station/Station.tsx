@@ -1,6 +1,7 @@
 import { Hand } from 'lucide-react';
-import { type ReactElement, useState } from 'react';
+import type { ReactElement } from 'react';
 import { BrandSymbol } from '../components/BrandSymbol';
+import { ColourWipe } from '../components/ColourWipe';
 import { type RackStatus, rackStatus } from '../state/model';
 import { useApp } from '../state/store';
 import { SheetHost } from './Sheets';
@@ -15,35 +16,18 @@ const COPY: Record<RackStatus, { word: string; line: string }> = {
   'resting-closed': { word: 'Resting', line: 'Not sharing today.' },
 };
 
-/** Sweeps the new state colour across the field from the bar sensor's side. */
-function ColourWipe({ status }: { status: RackStatus }): ReactElement {
-  const [settled, setSettled] = useState(status);
-  return (
-    <>
-      <div className="status-fill" data-status={settled} />
-      {settled !== status && (
-        <div
-          key={status}
-          className="status-fill status-wipe"
-          data-status={status}
-          onAnimationEnd={() => setSettled(status)}
-        />
-      )}
-    </>
-  );
-}
-
 function StatusField({ status }: { status: RackStatus }): ReactElement {
   const { word, line } = COPY[status];
+  const rackId = useApp((state) => state.rackId);
   return (
-    <section className="status" aria-live="polite">
+    <section className="status" aria-live="polite" data-cue="station-status">
       <ColourWipe status={status} />
       <div key={status} className="status-text">
         <h2 className="status-word">{word}</h2>
         <p className="status-line">{line}</p>
       </div>
       <div className="status-id">
-        <p className="status-rack">Rack 3</p>
+        <p className="status-rack">Rack {rackId}</p>
         {status === 'mid-set' ? (
           <Hand className="status-hand" aria-hidden="true" />
         ) : (
