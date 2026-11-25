@@ -434,3 +434,87 @@
 .phone-set-actions .phone-secondary {
   box-shadow: inset 0 0 0 2px var(--card-hover);
 }
+
+/* Waiting in line */
+
+.wait-status {
+  --tone: var(--sky);
+
+  display: grid;
+  gap: 6px;
+  margin-top: 26px;
+  padding: 22px 20px;
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--tone) 14%, var(--card));
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--tone) 40%, transparent);
+  animation: view-in 460ms var(--ease-out) both;
+}
+
+.wait-status[data-tone='go'] {
+  --tone: var(--go);
+}
+
+.wait-status[data-tone='turn'] {
+  --tone: var(--blue);
+}
+
+.wait-status svg {
+  width: 30px;
+  height: 30px;
+  color: var(--tone);
+}
+
+.wait-status h3 {
+  margin-top: 4px;
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.wait-status p {
+  font-size: 17px;
+  line-height: 1.4;
+  color: var(--text-soft);
+}
+
+.wait-facts {
+  display: grid;
+  gap: 2px;
+  margin: 18px 0 0;
+}
+
+.wait-facts div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 4px;
+  border-bottom: 1px solid var(--line);
+  font-size: 16px;
+}
+
+.wait-facts dt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-soft);
+}
+
+.wait-facts dt svg {
+  width: 16px;
+  height: 16px;
+}
+
+.wait-facts dd {
+  margin: 0;
+  font-weight: 700;
+  text-align: right;
+}
+
+.wait-leave {
+  margin-top: auto;
+}
+
+.phone-waiting .phone-state {
+  background: var(--sky);
+}

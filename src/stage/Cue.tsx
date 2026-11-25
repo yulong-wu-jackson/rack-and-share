@@ -1,6 +1,7 @@
 import { type ReactElement, useEffect, useRef, useState } from 'react';
-import { useApp } from '../state/store';
+import { type AppState, useApp } from '../state/store';
 import { type Box, toStage } from './geometry';
+import { currentPrompt } from './Narration';
 
 interface Point {
   x: number;
@@ -111,9 +112,16 @@ function leader(caption: Box, ring: Box, radius: number): string {
 }
 
 /** Points from the caption to the part of a screen it talks about, and follows it as it moves. */
+/** The story's cue while it plays; in Try mode, the control the current goal is about. */
+function activeCue(state: AppState): string | null {
+  return state.mode === 'watch' ? state.cue : currentPrompt(state).cue;
+}
+
 export function Cue(): ReactElement {
-  const cue = useApp((state) => state.cue);
-  const caption = useApp((state) => state.caption);
+  const cue = useApp(activeCue);
+  const caption = useApp((state) =>
+    state.mode === 'watch' ? state.caption : currentPrompt(state).headline,
+  );
   const [shape, setShape] = useState<Shape | null>(null);
   const drawn = useRef<Box | null>(null);
   /** What is on screen now, kept across cues so a hidden next target clears the old ring. */

@@ -3,9 +3,11 @@ import { director } from '../director/director';
 import { ARRIVAL_CHAPTER } from '../director/script';
 import { Floor } from '../floor/Floor';
 import { Phone } from '../phone/Phone';
+import { Picker } from '../scenario/Picker';
+import { SCENARIOS } from '../scenario/scenarios';
 import { Scene } from '../scene/Scene';
 import { rackStatus } from '../state/model';
-import { useApp } from '../state/store';
+import { type Persona, useApp } from '../state/store';
 import { Station } from '../station/Station';
 import { Cue } from './Cue';
 import { PHONE_ID, STAGE_ID, STATION_ID } from './geometry';
@@ -49,8 +51,14 @@ export function Stage(): ReactElement {
   const view = useApp((state) => state.view);
   const watching = useApp((state) => state.mode === 'watch');
   const nfcPulse = useApp((state) => state.nfcPulse);
-  // The phone is Marcus's. Before he arrives it still shows, so only a departure hides it.
-  const ownerAway = useApp((state) => !state.present.marcus && state.chapter > ARRIVAL_CHAPTER);
+  const picking = useApp((state) => state.picker);
+  // The phone is the viewer's in a scenario, else Marcus's.
+  const owner: Persona = useApp((state) => state.role ?? 'marcus');
+  const yours = useApp((state) => state.role !== null);
+  // Before its owner arrives it still shows, so only a departure hides it.
+  const ownerAway = useApp(
+    (state) => !state.present[owner] && (state.mode === 'try' || state.chapter > ARRIVAL_CHAPTER),
+  );
   // While the story plays, a click on a device hands control to the viewer.
   const takeOver = watching ? director.handOver : undefined;
 
@@ -65,7 +73,7 @@ export function Stage(): ReactElement {
           style={{ transform: `scale(${scale})` }}
         >
           <Floor />
-          <div className="rack-view" inert={view !== 'rack'}>
+          <div className="rack-view" inert={view !== 'rack' || picking}>
             <div className="scene-band">
               <Scene />
             </div>
@@ -80,6 +88,10 @@ export function Stage(): ReactElement {
               <Station />
             </div>
             {nfcPulse > 0 && <div key={nfcPulse} className="nfc-contact" />}
+            <p className="device-label" data-who={owner} data-away={ownerAway || undefined}>
+              {SCENARIOS[owner].name}’s phone
+              {yours && <span className="device-label-you">You</span>}
+            </p>
             {/* biome-ignore lint/a11y/noStaticElementInteractions: catches the click that takes over from the story */}
             {/* biome-ignore lint/a11y/useKeyWithClickEvents: keyboard users take over with the mode switch */}
             <div
@@ -93,6 +105,7 @@ export function Stage(): ReactElement {
             </div>
           </div>
           {/* After the full-stage views, so neither covers its buttons. */}
+          <Picker />
           <TopBar />
           <Narration />
           <Cue />

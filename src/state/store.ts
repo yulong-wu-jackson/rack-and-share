@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import * as ambient from '../floor/ambient';
 import { type Floor, HERO_RACK, type RackId, seedFloor } from '../floor/racks';
+import { reachedStep, SCENARIOS } from '../scenario/scenarios';
 import type { Experience, Rack, ToggleTag, WaitKind } from './model';
 import * as model from './model';
 
@@ -9,7 +10,7 @@ export type Mode = 'watch' | 'try';
 export type View = 'floor' | 'rack';
 export type Sheet = 'guide' | 'rules' | 'wait' | 'guest' | 'guest-edit';
 export type Persona = 'marcus' | 'maya';
-export type PhoneScreen = 'setup' | 'ready' | 'session';
+export type PhoneScreen = 'setup' | 'ready' | 'session' | 'waiting';
 export type Spot = 'rack' | 'front' | 'station' | 'near' | 'side' | 'away';
 
 export interface Touch {
@@ -48,6 +49,17 @@ export interface AppState {
   atRack: Persona;
   gaze: boolean;
   touches: Record<Persona, Touch | null>;
+  /** Who the viewer plays in Try mode, once they have picked a side. */
+  role: Persona | null;
+  /** The rack the scenario runs on. The other person only acts while the viewer is there. */
+  scenarioRack: RackId | null;
+  /** Steps of the scenario done so far. */
+  step: number;
+  /** The side picker is open over the rack. */
+  picker: boolean;
+  /** Maya's waiter id at the scenario rack, whether the viewer or the other person plays her. */
+  mayaWaiter: number | null;
+
   /** Counters that restart one-shot effects each time they change. */
   sensorPulse: number;
   nfcPulse: number;
@@ -86,17 +98,65 @@ function initialState(mode: Mode): AppState {
     atRack: 'marcus',
     gaze: false,
     touches: { marcus: null, maya: null },
+    role: null,
+    scenarioRack: null,
+    step: 0,
+    picker: false,
+    mayaWaiter: null,
     sensorPulse: 0,
     nfcPulse: 0,
     sceneCut: 0,
   };
 }
 
-function modeFromUrl(): Mode {
-  return new URLSearchParams(window.location.search).get('mode') === 'try' ? 'try' : 'watch';
+/** The scenario on a rack, from its first moment. Any earlier scenario rack is left free. */
+function scenarioState(state: AppState, role: Persona, rackId: RackId): Partial<AppState> {
+  const scenario = SCENARIOS[role];
+  const rack = scenario.rack();
+  const floor = { ...leaveRack(state), [rackId]: rack };
+  if (state.scenarioRack !== null && state.scenarioRack !== rackId) {
+    floor[state.scenarioRack] = model.initialRack;
+  }
+  return {
+    mode: 'try',
+    playing: false,
+    caption: '',
+    cue: null,
+    view: 'rack',
+    rackId,
+    rack,
+    floor,
+    held: [],
+    mine: null,
+    name: scenario.name,
+    tags: scenario.tags,
+    tagsSaved: true,
+    sheet: null,
+    draftSets: null,
+    present: scenario.present,
+    atRack: 'marcus',
+    // Maya starts by reading the rack from where she stands.
+    gaze: role === 'maya',
+    touches: { marcus: null, maya: null },
+    role,
+    scenarioRack: rackId,
+    step: 0,
+    picker: false,
+    mayaWaiter: null,
+    sceneCut: state.sceneCut + 1,
+  };
 }
 
-export const useApp = create<AppState>(() => initialState(modeFromUrl()));
+function stateFromUrl(): AppState {
+  const params = new URLSearchParams(window.location.search);
+  const mode: Mode = params.get('mode') === 'try' ? 'try' : 'watch';
+  const state = initialState(mode);
+  const as = params.get('as');
+  if (mode !== 'try' || (as !== 'marcus' && as !== 'maya')) return state;
+  return { ...state, ...scenarioState(state, as, HERO_RACK) };
+}
+
+export const useApp = create<AppState>(stateFromUrl);
 
 const set = useApp.setState;
 const get = useApp.getState;
@@ -110,8 +170,13 @@ function leaveRack(state: AppState): Floor {
   return { ...state.floor, [state.rackId]: state.rack };
 }
 
-/** Who stands in the rack: guests are drawn as Maya, phone users as Marcus. */
-function lifterAt(rack: Rack): Persona {
+/**
+ * Who stands in the rack. The viewer's own session is theirs, someone working in is Maya,
+ * and anyone else is drawn as Maya if they started without a phone, else as Marcus.
+ */
+function lifterAt(rack: Rack, own: boolean, role: Persona | null): Persona {
+  if (rack.workIn.lifting) return 'maya';
+  if (own && role) return role;
   return rack.session?.by === 'guest' ? 'maya' : 'marcus';
 }
 
@@ -147,7 +212,7 @@ export const actions = {
     });
   },
 
-  /** Walks from the board to one rack. */
+  /** Walks from the board to one rack. In Try mode a new rack first asks which side to play. */
   enterRack(id: RackId): void {
     set((state) => {
       const floor = leaveRack(state);
@@ -157,17 +222,33 @@ export const actions = {
         rackId: id,
         rack,
         floor,
+        picker: state.mode === 'try' && state.scenarioRack !== id,
         sheet: null,
         draftSets: null,
-        atRack: lifterAt(rack),
+        atRack: lifterAt(rack, state.mine === id, state.role),
         touches: { marcus: null, maya: null },
         sceneCut: state.sceneCut + 1,
       };
     });
   },
+  /** Plays one side of the scenario on the rack in focus, or on `rackId`. */
+  startScenario(role: Persona, rackId?: RackId): void {
+    set((state) => scenarioState(state, role, rackId ?? state.rackId));
+  },
+  /** Moves the scenario on to the furthest step the viewer has reached. */
+  syncStep(): void {
+    set((state) => {
+      const step = reachedStep(state);
+      return step === state.step ? state : { step };
+    });
+  },
+  closePicker(): void {
+    actions.showFloor();
+  },
   showFloor(): void {
     set((state) => ({
       view: 'floor',
+      picker: false,
       floor: leaveRack(state),
       sheet: null,
       draftSets: null,
@@ -182,11 +263,20 @@ export const actions = {
       // Up close, a free rack waits for the viewer. Anyone else's workout carries on.
       const waits = state.view === 'rack' && !rack.session;
       const floor = { ...state.floor, [rackId]: rack };
-      const next = ambient.tick(floor, state.beats, waits ? [rackId, ...held] : held);
+      // The scenario rack only changes through the viewer and the person they share it with.
+      const skip = [...held];
+      if (waits) skip.push(rackId);
+      if (state.scenarioRack !== null) skip.push(state.scenarioRack);
+      const next = ambient.tick(floor, state.beats, skip);
       if (!next.changed) return { beats: next.beats };
       const focused = next.floor[rackId];
       if (focused === rack) return { floor: next.floor, beats: next.beats };
-      return { floor: next.floor, beats: next.beats, rack: focused, atRack: lifterAt(focused) };
+      return {
+        floor: next.floor,
+        beats: next.beats,
+        rack: focused,
+        atRack: lifterAt(focused, state.mine === rackId, state.role),
+      };
     });
   },
 
@@ -214,7 +304,7 @@ export const actions = {
         rack: checkIn ? model.checkIn({ ...state.rack, tags: state.tags }) : state.rack,
         mine: checkIn ? state.rackId : state.mine,
         held: checkIn ? hold(state.held, state.rackId) : state.held,
-        atRack: checkIn ? 'marcus' : state.atRack,
+        atRack: checkIn ? (state.role ?? 'marcus') : state.atRack,
         sheet: null,
         nfcPulse: state.nfcPulse + 1,
       };
@@ -288,14 +378,54 @@ export const actions = {
     set({ draftSets: null });
   },
 
+  /** The viewer joins the line. Playing Maya, that place in line is hers. */
   joinLine(kind: WaitKind): void {
-    set((state) => ({ rack: model.joinLine(state.rack, kind), sheet: null }));
+    set((state) => {
+      if (state.role === 'maya') return { ...mayaJoins(state, kind), sheet: null };
+      return { rack: model.joinLine(state.rack, kind), sheet: null };
+    });
+  },
+  /** Maya, as the other person, asks the viewer's rack to work in. */
+  mayaAsks(): void {
+    set((state) => mayaJoins(state, 'work-in'));
   },
   leaveLine(id: number): void {
     updateRack((rack) => model.leaveLine(rack, id));
   },
   answerWorkIn(accept: boolean): void {
     updateRack((rack) => model.answerWorkIn(rack, accept));
+  },
+  /** The person working in takes a set during the lifter's rest. */
+  startWorkIn(): void {
+    set((state) => {
+      const rack = model.startWorkIn(state.rack);
+      if (rack === state.rack) return state;
+      return { rack, atRack: 'maya', sheet: null, sensorPulse: state.sensorPulse + 1 };
+    });
+  },
+  finishWorkIn(): void {
+    set((state) => {
+      const rack = model.finishWorkIn(state.rack);
+      if (rack === state.rack) return state;
+      const atRack = lifterAt(rack, state.mine === state.rackId, state.role);
+      return { rack, atRack, sensorPulse: state.sensorPulse + 1 };
+    });
+  },
+  /** Maya, as the other person, starts on the rack without a phone. */
+  mayaTakesRack(): void {
+    set((state) => {
+      const rack = model.startGuest(state.rack, model.GUEST_DEFAULT_SETS, SCENARIOS.maya.tags);
+      return rack === state.rack ? state : { rack, atRack: 'maya' };
+    });
+  },
+  arrive(who: Persona): void {
+    set((state) => ({ present: { ...state.present, [who]: true } }));
+  },
+  leave(who: Persona): void {
+    set((state) => ({ present: { ...state.present, [who]: false } }));
+  },
+  setGaze(on: boolean): void {
+    set({ gaze: on });
   },
 
   openSheet(sheet: Sheet): void {
@@ -306,8 +436,20 @@ export const actions = {
   },
 };
 
+function mayaJoins(state: AppState, kind: WaitKind): Partial<AppState> {
+  const inLine = state.rack.waiters.some((waiter) => waiter.id === state.mayaWaiter);
+  if (inLine) return {};
+  const rack = model.joinLine(state.rack, kind);
+  if (rack === state.rack) return {};
+  return { rack, mayaWaiter: state.rack.nextWaiterId };
+}
+
 export function phoneScreen(state: AppState): PhoneScreen {
   if (state.mine === state.rackId) return 'session';
+  if (state.role === 'maya' && state.rackId === state.scenarioRack) {
+    const inLine = state.rack.waiters.some((waiter) => waiter.id === state.mayaWaiter);
+    if (inLine) return 'waiting';
+  }
   return state.tagsSaved ? 'ready' : 'setup';
 }
 

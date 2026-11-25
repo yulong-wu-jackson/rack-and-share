@@ -59,6 +59,14 @@ function Crumbs(): ReactElement | null {
   );
 }
 
+/** Starts the story, or the scenario being played, or Try mode, over from the top. */
+function startOver(): void {
+  const { mode, role, scenarioRack } = useApp.getState();
+  if (mode === 'watch') director.play();
+  else if (role && scenarioRack !== null) actions.startScenario(role, scenarioRack);
+  else actions.reset('try');
+}
+
 export function TopBar(): ReactElement {
   const watching = useApp((state) => state.mode === 'watch');
   return (
@@ -87,7 +95,7 @@ export function TopBar(): ReactElement {
           className="icon-button"
           aria-label="Start over"
           title="Start over"
-          onClick={() => (watching ? director.play() : actions.reset('try'))}
+          onClick={startOver}
         >
           <RotateCcw />
         </button>

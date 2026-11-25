@@ -27,11 +27,19 @@ export type Session = {
   lifting: boolean;
 } & ({ by: 'phone' } | { by: 'guest'; tags: Tags });
 
+/** Someone working in between the current lifter's sets. */
+export interface WorkIn {
+  lifting: boolean;
+  /** Sets they have done in this session. */
+  sets: number;
+}
+
 export interface Rack {
   tags: Tags;
   session: Session | null;
   waiters: Waiter[];
   nextWaiterId: number;
+  workIn: WorkIn;
 }
 
 export type RackStatus = 'free' | 'your-turn' | 'mid-set' | 'resting-open' | 'resting-closed';
@@ -48,11 +56,14 @@ export const MAX_SETS = 9;
 export const MAX_WAITERS = 3;
 const MINUTES_PER_SET = 5;
 
+export const NO_WORK_IN: WorkIn = { lifting: false, sets: 0 };
+
 export const initialRack: Rack = {
   tags: { experience: null, workIn: true, spot: false, questions: false },
   session: null,
   waiters: [],
   nextWaiterId: 1,
+  workIn: NO_WORK_IN,
 };
 
 export function activeTags(rack: Rack): Tags | null {
@@ -67,7 +78,7 @@ export function opensToWorkIn(rack: Rack): boolean {
 
 export function rackStatus(rack: Rack): RackStatus {
   if (!rack.session) return rack.waiters.length > 0 ? 'your-turn' : 'free';
-  if (rack.session.lifting) return 'mid-set';
+  if (rack.session.lifting || rack.workIn.lifting) return 'mid-set';
   return opensToWorkIn(rack) ? 'resting-open' : 'resting-closed';
 }
 
@@ -89,14 +100,14 @@ export function setsLine(session: Session): string {
 
 /** The request the lifter still has to answer. It only surfaces while they rest. */
 export function pendingRequest(rack: Rack): Waiter | null {
-  if (!rack.session || rack.session.lifting) return null;
+  if (!rack.session || rack.session.lifting || rack.workIn.lifting) return null;
   return rack.waiters.find((waiter) => waiter.status === 'asked') ?? null;
 }
 
 function startSession(rack: Rack, session: Session): Rack {
   if (rack.session) return rack;
   // Whoever starts on a rack with a line is taken to be first in it.
-  return { ...rack, session, waiters: rack.waiters.slice(1) };
+  return { ...rack, session, waiters: rack.waiters.slice(1), workIn: NO_WORK_IN };
 }
 
 export function checkIn(rack: Rack): Rack {
@@ -124,7 +135,7 @@ export function updateGuestSettings(rack: Rack, sets: number, tags: Tags): Rack 
 
 /** The sensor sees the bar leave the hooks: a set starts and the count drops. */
 export function liftBar(rack: Rack): Rack {
-  if (!rack.session || rack.session.lifting) return rack;
+  if (!rack.session || rack.session.lifting || rack.workIn.lifting) return rack;
   const setsLeft = Math.max(0, rack.session.setsLeft - 1);
   return { ...rack, session: { ...rack.session, lifting: true, setsLeft } };
 }
@@ -146,7 +157,20 @@ export function endSession(rack: Rack): Rack {
     ...waiter,
     status: 'queued' as const,
   }));
-  return { ...rack, session: null, waiters };
+  return { ...rack, session: null, waiters, workIn: NO_WORK_IN };
+}
+
+/** Whoever the lifter said yes to takes a set while the lifter rests. */
+export function startWorkIn(rack: Rack): Rack {
+  const { session, waiters, workIn } = rack;
+  if (!session || session.lifting || workIn.lifting) return rack;
+  if (!waiters.some((waiter) => waiter.status === 'sharing')) return rack;
+  return { ...rack, workIn: { ...workIn, lifting: true } };
+}
+
+export function finishWorkIn(rack: Rack): Rack {
+  if (!rack.workIn.lifting) return rack;
+  return { ...rack, workIn: { lifting: false, sets: rack.workIn.sets + 1 } };
 }
 
 export function joinLine(rack: Rack, kind: WaitKind): Rack {

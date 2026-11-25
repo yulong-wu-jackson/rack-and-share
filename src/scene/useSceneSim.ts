@@ -88,7 +88,7 @@ export function useSceneSim(): SceneFrame {
       const cut = lastCut.current !== state.sceneCut;
       lastCut.current = state.sceneCut;
       const scene = frame.current;
-      const lifting = state.rack.session?.lifting ?? false;
+      const lifting = (state.rack.session?.lifting ?? false) || state.rack.workIn.lifting;
       scene.carrier = null;
 
       for (const who of ['marcus', 'maya'] as const) {

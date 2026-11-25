@@ -228,9 +228,165 @@
   }
 }
 
+/* In a scenario the panel also says who the viewer is, so the goal line is a little smaller. */
+.narration[data-scenario] .caption {
+  font-size: 27px;
+  line-height: 1.16;
+}
+
+.role {
+  --who: var(--marcus);
+
+  margin-bottom: 16px;
+  animation: caption-in 420ms var(--ease-out) both;
+}
+
+.role[data-who='maya'] {
+  --who: var(--maya);
+}
+
+.role-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.role-avatar {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  padding-top: 3px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.08);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--who) 45%, transparent);
+}
+
+.role-name {
+  font-size: 16px;
+  color: var(--text-soft);
+}
+
+.role-name strong {
+  color: var(--who);
+  font-weight: 800;
+}
+
+.role-switch {
+  margin-left: auto;
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 15px;
+  background: rgb(255 255 255 / 0.1);
+  color: var(--text-soft);
+  font-size: 14px;
+  font-weight: 700;
+  transition:
+    background 160ms,
+    color 160ms;
+}
+
+.role-switch:hover {
+  background: rgb(255 255 255 / 0.18);
+  color: var(--text);
+}
+
+.role-steps {
+  display: flex;
+  gap: 5px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.role-steps li {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.14);
+  transition: background 400ms;
+}
+
+.role-steps li[data-state='done'] {
+  background: var(--who);
+}
+
+.role-steps li[data-state='current'] {
+  background: linear-gradient(90deg, var(--who) 0 35%, rgb(255 255 255 / 0.14) 35%);
+  animation: step-pulse 1600ms var(--ease-in-out) infinite alternate;
+}
+
+@keyframes step-pulse {
+  to {
+    background-color: rgb(255 255 255 / 0.3);
+  }
+}
+
+.finished {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.finished-link {
+  display: inline-flex;
+  white-space: nowrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 20px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-soft);
+}
+
+.finished-link:hover {
+  color: var(--text);
+}
+
+.finished-link svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Whose phone this is. */
+.device-label {
+  position: absolute;
+  top: 100px;
+  left: 983px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 340px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-soft);
+  transition: opacity 700ms;
+}
+
+.device-label[data-away] {
+  opacity: 0.3;
+}
+
+.device-label-you {
+  padding: 2px 9px;
+  border-radius: 10px;
+  background: var(--who, var(--marcus));
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.device-label[data-who='maya'] {
+  --who: var(--maya);
+}
+
 /* The one control that stands for something done in the gym, not on a screen. */
 .world-action {
   display: inline-flex;
+  white-space: nowrap;
   align-items: center;
   gap: 10px;
   height: 52px;
@@ -550,6 +706,20 @@
 [data-layout='portrait'] .phone {
   top: 996px;
   left: 240px;
+}
+
+[data-layout='portrait'] .device-label {
+  top: 970px;
+  left: 240px;
+}
+
+[data-layout='portrait'] .narration[data-scenario] {
+  display: block;
+  height: auto;
+}
+
+[data-layout='portrait'] .narration[data-scenario] .world-action {
+  margin-top: 12px;
 }
 
 [data-layout='portrait'] .nfc-contact {
