@@ -52,7 +52,8 @@ export function advance(rack: Rack, count: number): { rack: Rack; nextIn: number
     const ended = model.endSession(rack);
     return { rack: ended, nextIn: ended.waiters.length > 0 ? HANDOVER_SECONDS : IDLE_SECONDS };
   }
-  return { rack: model.liftBar(rack), nextIn: SET_SECONDS };
+  // A lifter open to sharing says yes to anyone who asked during the rest, then starts the set.
+  return { rack: model.liftBar(model.answerWorkIn(rack, true)), nextIn: SET_SECONDS };
 }
 
 /** One second of floor time for every rack except the ones in `skip`. */

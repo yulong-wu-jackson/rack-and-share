@@ -167,6 +167,21 @@ describe('floor and racks', () => {
     expect(state().rack.tags.workIn).toBe(true);
   });
 
+  it('lets another lifter answer your request while you stay at their rack', () => {
+    actions.enterRack(2);
+    actions.joinLine('work-in');
+    expect(state().rack.waiters[0].status).toBe('asked');
+    for (let second = 0; second < 15; second += 1) actions.tickFloor();
+    expect(state().rack.waiters[0].status).toBe('sharing');
+    expect(state().rack).toBe(state().floor[2]);
+  });
+
+  it('keeps a free rack free while the viewer stands at it', () => {
+    actions.enterRack(3);
+    for (let second = 0; second < 40; second += 1) actions.tickFloor();
+    expect(state().rack.session).toBeNull();
+  });
+
   it('runs the rack in focus while the viewer is on the board', () => {
     for (let second = 0; second < 40; second += 1) actions.tickFloor();
     expect(state().floor[HERO_RACK].session).not.toBeNull();

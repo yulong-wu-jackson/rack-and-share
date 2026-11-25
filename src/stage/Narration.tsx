@@ -6,6 +6,7 @@ import {
   actions,
   checkedInElsewhere,
   lifterName,
+  ownSession,
   phoneScreen,
   useApp,
 } from '../state/store';
@@ -65,9 +66,11 @@ function promptFor(state: AppState): Prompt {
     };
   }
   const name = lifterName(state);
+  // Other lifters run their own workouts; the viewer only lifts in sessions they started.
+  const own = ownSession(state);
   return session.lifting
-    ? { headline: `${name} is mid-set.`, action: 'rack' }
-    : { headline: `${name} is resting.`, action: 'lift' };
+    ? { headline: `${name} is mid-set.`, action: own ? 'rack' : null }
+    : { headline: `${name} is resting.`, action: own ? 'lift' : null };
 }
 
 export function Narration(): ReactElement {

@@ -110,6 +110,11 @@ function leaveRack(state: AppState): Floor {
   return { ...state.floor, [state.rackId]: state.rack };
 }
 
+/** Who stands in the rack: guests are drawn as Maya, phone users as Marcus. */
+function lifterAt(rack: Rack): Persona {
+  return rack.session?.by === 'guest' ? 'maya' : 'marcus';
+}
+
 function hold(held: RackId[], id: RackId): RackId[] {
   return held.includes(id) ? held : [...held, id];
 }
@@ -154,7 +159,7 @@ export const actions = {
         floor,
         sheet: null,
         draftSets: null,
-        atRack: rack.session?.by === 'guest' ? 'maya' : 'marcus',
+        atRack: lifterAt(rack),
         touches: { marcus: null, maya: null },
         sceneCut: state.sceneCut + 1,
       };
@@ -169,17 +174,19 @@ export const actions = {
       touches: { marcus: null, maya: null },
     }));
   },
-  /** One second passes for every rack the viewer is not standing at or holding a session on. */
+  /** One second passes for every rack except those running the viewer's sessions. */
   tickFloor(): void {
     set((state) => {
       if (state.mode === 'watch' && !state.playing) return state;
-      const upClose = state.view === 'rack';
-      const skip = upClose ? [state.rackId, ...state.held] : state.held;
-      const next = ambient.tick(state.floor, state.beats, skip);
+      const { rackId, rack, held } = state;
+      // Up close, a free rack waits for the viewer. Anyone else's workout carries on.
+      const waits = state.view === 'rack' && !rack.session;
+      const floor = { ...state.floor, [rackId]: rack };
+      const next = ambient.tick(floor, state.beats, waits ? [rackId, ...held] : held);
       if (!next.changed) return { beats: next.beats };
-      // On the board, the rack last in focus runs like the others.
-      const rack = upClose ? state.rack : next.floor[state.rackId];
-      return { floor: next.floor, beats: next.beats, rack };
+      const focused = next.floor[rackId];
+      if (focused === rack) return { floor: next.floor, beats: next.beats };
+      return { floor: next.floor, beats: next.beats, rack: focused, atRack: lifterAt(focused) };
     });
   },
 
@@ -309,10 +316,15 @@ export function checkedInElsewhere(state: AppState): RackId | null {
   return state.mine === state.rackId ? null : state.mine;
 }
 
+/** Whether the session at the rack in focus is one the viewer started, by phone or at the station. */
+export function ownSession(state: AppState): boolean {
+  return state.held.includes(state.rackId);
+}
+
 export function lifterName(state: AppState): string {
-  if (state.atRack === 'maya') return 'Maya';
-  // Another lifter's phone session belongs to someone the viewer does not know.
-  return state.mine === state.rackId ? state.name.trim() || 'Marcus' : 'The lifter';
+  // Anyone else in the rack is someone the viewer does not know.
+  if (!ownSession(state)) return 'The lifter';
+  return state.atRack === 'marcus' ? state.name.trim() || 'Marcus' : 'Maya';
 }
 
 /** Where each person stands, worked out from the rack and the open sheet. */

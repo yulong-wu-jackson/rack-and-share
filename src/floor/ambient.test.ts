@@ -20,6 +20,14 @@ describe('advance', () => {
     expect(rack.waiters).toEqual([{ id: 1, status: 'queued' }]);
   });
 
+  it('answers a request made during the rest before the next set', () => {
+    const asked = joinLine(checkIn(initialRack), 'work-in');
+    expect(asked.waiters[0].status).toBe('asked');
+    const next = advance(asked, 1).rack;
+    expect(next.waiters[0].status).toBe('sharing');
+    expect(next.session?.lifting).toBe(true);
+  });
+
   it('hands the rack to the next in line quickly', () => {
     const done = setSets(checkIn(initialRack), 0);
     const step = advance(joinLine(done, 'turn'), 1);
