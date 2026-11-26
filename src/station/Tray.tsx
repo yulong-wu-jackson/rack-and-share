@@ -21,7 +21,7 @@ import {
   timeLine,
   type WaitStatus,
 } from '../state/model';
-import { actions, useApp } from '../state/store';
+import { actions, ownSession, useApp } from '../state/store';
 
 const WAIT_LABEL: Record<WaitStatus, string> = {
   asked: 'Asked to work in',
@@ -118,6 +118,9 @@ export function Tray({ rack }: { rack: Rack }): ReactElement {
   const guest = session?.by === 'guest';
   // Playing Maya, she already has her place once she is in line.
   const inLine = useApp((state) => state.role === 'maya' && mayaInLine(state) !== null);
+  // A viewer playing a side never waits for the rack they hold. Watch mode, and a Watch handover with
+  // no side picked, keep the button for Maya.
+  const own = useApp((state) => state.role !== null && ownSession(state));
   return (
     <section className="tray">
       {session ? (
@@ -131,16 +134,18 @@ export function Tray({ rack }: { rack: Rack }): ReactElement {
             <TagChips rack={rack} />
           </div>
           <div className="line">
-            <button
-              type="button"
-              className="button button-ink"
-              data-touch="wait-open"
-              disabled={inLine || waiters.length >= MAX_WAITERS}
-              onClick={() => actions.openSheet('wait')}
-            >
-              <Hourglass aria-hidden="true" />
-              {inLine ? 'You’re in line' : 'I’m waiting'}
-            </button>
+            {!own && (
+              <button
+                type="button"
+                className="button button-ink"
+                data-touch="wait-open"
+                disabled={inLine || waiters.length >= MAX_WAITERS}
+                onClick={() => actions.openSheet('wait')}
+              >
+                <Hourglass aria-hidden="true" />
+                {inLine ? 'You’re in line' : 'I’m waiting'}
+              </button>
+            )}
             <WaiterChips rack={rack} />
           </div>
         </div>

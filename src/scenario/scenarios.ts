@@ -10,6 +10,7 @@ import {
   type Waiter,
 } from '../state/model';
 import type { AppState, Persona } from '../state/store';
+import { STUDY } from '../state/study';
 
 /** Something done in the gym, not on a screen, offered as the white button in the left panel. */
 export type WorldAction = 'tap-phone' | 'lift' | 'rack' | 'work-in' | 'finish-work-in';
@@ -98,7 +99,12 @@ const marcus: Scenario = {
       case 0:
         return prompt(`${rack} is free. Tap your phone on it to check in.`, 'tap-phone');
       case 1:
-        return prompt('You’re in. Plan 3 sets on your phone, then confirm.', null, 'phone-counter');
+        // Without the coaching line, a study participant may keep the default plan; let them lift anyway.
+        return prompt(
+          'You’re in. Plan 3 sets on your phone, then confirm.',
+          STUDY ? 'lift' : null,
+          'phone-counter',
+        );
       case 2:
         return prompt('Start your first set.', 'lift');
     }
@@ -116,13 +122,18 @@ const marcus: Scenario = {
     if (pendingRequest(s.rack)) {
       return prompt('Maya asked to work in. Answer on your phone.', null, 'phone-request');
     }
-    if (s.step === 3) {
-      return s.tags.workIn
-        ? prompt('Resting. The rack says you’re open to work in.', 'lift')
-        : prompt('Resting. The rack says you’re not sharing today.', 'lift');
+    if (mayaInLine(s)?.status === 'sharing' && workIn.sets === 0) {
+      return prompt('You said yes. Maya takes a set while you rest.');
     }
     if (session.setsLeft === 0) {
       return prompt('All sets done. End your session on your phone.', null, 'end-session');
+    }
+    if (s.step === 3) {
+      // He rests until Maya has had her chance to ask.
+      const next = s.mayaWaiter === null ? null : 'lift';
+      return s.tags.workIn
+        ? prompt('Resting. The rack says you’re open to work in.', next)
+        : prompt('Resting. The rack says you’re not sharing today.', next);
     }
     return prompt('Your rest. Start the next set when you’re ready.', 'lift');
   },
@@ -195,6 +206,8 @@ export const SCENARIOS: Record<Persona, Scenario> = { marcus, maya };
 /** The furthest step the viewer has reached, never less than before. */
 export function reachedStep(state: AppState): number {
   if (!state.role) return 0;
+  // Only the scenario rack moves the scenario on; other racks have lifters of their own.
+  if (state.rackId !== state.scenarioRack) return state.step;
   const { steps } = SCENARIOS[state.role];
   let step = state.step;
   steps.forEach((candidate, index) => {
