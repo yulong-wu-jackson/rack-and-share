@@ -115,6 +115,20 @@ describe('playing Marcus', () => {
     expect(scenarioDone(state())).toBe(true);
   });
 
+  it('moves on only for what happens on its own rack', () => {
+    act(actions.phoneTap);
+    actions.adjustSets(-2);
+    act(actions.confirmSets);
+    const floor = state().floor;
+    const busy = Object.values(floor).findIndex((rack) => rack.session?.lifting);
+    expect(busy).toBeGreaterThanOrEqual(0);
+
+    // Someone else mid-set on another rack is not Marcus's first set.
+    actions.showFloor();
+    act(() => actions.enterRack(Number(Object.keys(floor)[busy]) as typeof HERO_RACK));
+    expect(state().step).toBe(2);
+  });
+
   it('keeps him on the hooks while Maya works in', () => {
     actions.phoneTap();
     actions.mayaAsks();

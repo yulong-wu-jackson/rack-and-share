@@ -673,7 +673,7 @@
 }
 
 /* Up close the breadcrumbs take the logo's place, so the story controls still fit. */
-[data-layout='portrait'] .stage[data-view='rack'] .brand {
+[data-layout='portrait'] .stage[data-view='rack'] .topbar:has(.crumbs) .brand {
   display: none;
 }
 

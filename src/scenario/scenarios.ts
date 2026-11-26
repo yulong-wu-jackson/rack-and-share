@@ -206,6 +206,8 @@ export const SCENARIOS: Record<Persona, Scenario> = { marcus, maya };
 /** The furthest step the viewer has reached, never less than before. */
 export function reachedStep(state: AppState): number {
   if (!state.role) return 0;
+  // Only the scenario rack moves the scenario on; other racks have lifters of their own.
+  if (state.rackId !== state.scenarioRack) return state.step;
   const { steps } = SCENARIOS[state.role];
   let step = state.step;
   steps.forEach((candidate, index) => {
