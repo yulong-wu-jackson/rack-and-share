@@ -18,9 +18,9 @@ import {
   ownSession,
   type Persona,
   phoneScreen,
-  STUDY,
   useApp,
 } from '../state/store';
+import { STUDY } from '../state/study';
 import { flyPhoneToStation } from './phoneTap';
 
 const ACTIONS: Record<WorldAction, { label: string; icon: ReactElement; run(): Promise<void> }> = {

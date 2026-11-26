@@ -118,8 +118,9 @@ export function Tray({ rack }: { rack: Rack }): ReactElement {
   const guest = session?.by === 'guest';
   // Playing Maya, she already has her place once she is in line.
   const inLine = useApp((state) => state.role === 'maya' && mayaInLine(state) !== null);
-  // In Try mode the viewer on the rack never waits for it. Watch mode plays both people on one screen.
-  const own = useApp((state) => state.mode === 'try' && ownSession(state));
+  // A viewer playing a side never waits for the rack they hold. Watch mode, and a Watch handover with
+  // no side picked, keep the button for Maya.
+  const own = useApp((state) => state.role !== null && ownSession(state));
   return (
     <section className="tray">
       {session ? (

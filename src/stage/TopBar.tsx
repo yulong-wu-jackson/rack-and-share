@@ -3,7 +3,8 @@ import type { ReactElement } from 'react';
 import lockup from '../assets/lockup.svg';
 import { director } from '../director/director';
 import { chapters } from '../director/script';
-import { actions, STUDY, useApp } from '../state/store';
+import { actions, useApp } from '../state/store';
+import { STUDY } from '../state/study';
 
 function Transport(): ReactElement {
   const playing = useApp((state) => state.playing);

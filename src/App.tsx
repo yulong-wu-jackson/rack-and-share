@@ -2,7 +2,8 @@ import { type ReactElement, useEffect } from 'react';
 import { director } from './director/director';
 import { runScenario } from './scenario/npc';
 import { Stage } from './stage/Stage';
-import { actions, STUDY, useApp } from './state/store';
+import { actions, useApp } from './state/store';
+import { STUDY } from './state/study';
 
 function isControl(target: EventTarget | null): boolean {
   return target instanceof HTMLInputElement || target instanceof HTMLButtonElement;
