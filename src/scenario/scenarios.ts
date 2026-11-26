@@ -116,13 +116,18 @@ const marcus: Scenario = {
     if (pendingRequest(s.rack)) {
       return prompt('Maya asked to work in. Answer on your phone.', null, 'phone-request');
     }
-    if (s.step === 3) {
-      return s.tags.workIn
-        ? prompt('Resting. The rack says you’re open to work in.', 'lift')
-        : prompt('Resting. The rack says you’re not sharing today.', 'lift');
+    if (mayaInLine(s)?.status === 'sharing' && workIn.sets === 0) {
+      return prompt('You said yes. Maya takes a set while you rest.');
     }
     if (session.setsLeft === 0) {
       return prompt('All sets done. End your session on your phone.', null, 'end-session');
+    }
+    if (s.step === 3) {
+      // He rests until Maya has had her chance to ask.
+      const next = s.mayaWaiter === null ? null : 'lift';
+      return s.tags.workIn
+        ? prompt('Resting. The rack says you’re open to work in.', next)
+        : prompt('Resting. The rack says you’re not sharing today.', next);
     }
     return prompt('Your rest. Start the next set when you’re ready.', 'lift');
   },

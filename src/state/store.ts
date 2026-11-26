@@ -147,6 +147,9 @@ function scenarioState(state: AppState, role: Persona, rackId: RackId): Partial<
   };
 }
 
+/** `?study` hides Try mode's coaching, so usability-test participants find each control themselves. */
+export const STUDY = new URLSearchParams(window.location.search).has('study');
+
 function stateFromUrl(): AppState {
   const params = new URLSearchParams(window.location.search);
   const mode: Mode = params.get('mode') === 'try' ? 'try' : 'watch';

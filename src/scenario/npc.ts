@@ -20,8 +20,8 @@ function mayaMove(state: AppState): Move | null {
   const me = mayaInLine(state);
 
   if (!state.present.maya) {
-    // She turns up once Marcus is lifting, or once he has left a free rack behind.
-    const due = session?.lifting || (!session && state.step >= 1);
+    // She turns up once Marcus has started lifting, or once he has left a free rack behind.
+    const due = state.step >= 3 || (!session && state.step >= 1);
     return due
       ? move('arrive', 1200, () => {
           actions.arrive('maya');

@@ -2,7 +2,7 @@ import { type ReactElement, useEffect } from 'react';
 import { director } from './director/director';
 import { runScenario } from './scenario/npc';
 import { Stage } from './stage/Stage';
-import { actions, useApp } from './state/store';
+import { actions, STUDY, useApp } from './state/store';
 
 function isControl(target: EventTarget | null): boolean {
   return target instanceof HTMLInputElement || target instanceof HTMLButtonElement;
@@ -30,7 +30,7 @@ export function App(): ReactElement {
       if (mode === 'try' && event.key === 'Escape' && !typing) {
         if (picker) actions.closePicker();
         else if (sheet && !rack.session?.lifting) actions.closeSheet();
-        else actions.showFloor();
+        else if (!STUDY) actions.showFloor();
       }
       if (mode !== 'watch' || isControl(event.target)) return;
       if (event.key === ' ') {

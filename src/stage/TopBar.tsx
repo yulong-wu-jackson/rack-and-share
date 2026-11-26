@@ -3,7 +3,7 @@ import type { ReactElement } from 'react';
 import lockup from '../assets/lockup.svg';
 import { director } from '../director/director';
 import { chapters } from '../director/script';
-import { actions, useApp } from '../state/store';
+import { actions, STUDY, useApp } from '../state/store';
 
 function Transport(): ReactElement {
   const playing = useApp((state) => state.playing);
@@ -69,6 +69,16 @@ function startOver(): void {
 
 export function TopBar(): ReactElement {
   const watching = useApp((state) => state.mode === 'watch');
+  // In a study session, participants stay on the scenario rack; the moderator reloads to reset.
+  if (STUDY) {
+    return (
+      <header className="topbar">
+        <div className="topbar-start">
+          <img className="brand" src={lockup} alt="Rack & Share" />
+        </div>
+      </header>
+    );
+  }
   return (
     <header className="topbar">
       <div className="topbar-start">

@@ -1,11 +1,17 @@
 import { ArrowRight, X } from 'lucide-react';
 import { type ReactElement, useEffect, useRef } from 'react';
+import { HERO_RACK } from '../floor/racks';
 import { actions, type Persona, useApp } from '../state/store';
 import { Avatar } from './Avatar';
 import './picker.css';
 import { SCENARIOS } from './scenarios';
 
 const SIDES: Persona[] = ['marcus', 'maya'];
+
+/** Study mode loads fresh from the URL, so a moderator can open each side in its own tab. */
+function studyUrl(who: Persona): string {
+  return `?mode=try&as=${who}&study`;
+}
 
 function SideCard({ who, rackId }: { who: Persona; rackId: number }): ReactElement {
   const scenario = SCENARIOS[who];
@@ -78,6 +84,10 @@ export function Picker(): ReactElement | null {
           ))}
         </div>
         <p className="picker-foot">You can switch sides at any time.</p>
+        <p className="picker-study">
+          Running a usability test? Start a study session on Rack {HERO_RACK}, with no hints, as{' '}
+          <a href={studyUrl('maya')}>Maya</a> or <a href={studyUrl('marcus')}>Marcus</a>.
+        </p>
       </div>
     </div>
   );

@@ -36,6 +36,8 @@ The other person is scripted and reacts to what you do. The panel on the left sh
 
 Add `?mode=try` to the URL to open in Try mode, and `&as=marcus` or `&as=maya` to start straight into a side on Rack 3.
 
+For usability testing, use study mode. In Try mode, tap any rack, then pick Maya or Marcus from the line under the two cards ("Running a usability test?"). Each link opens that side on Rack 3 in study mode, and you can open each one in its own tab. The URL form is `?mode=try&as=maya&study`. Study mode hides the coaching line, its ring, the step dots, the closing message, the top bar controls, and the Switch and replay buttons, and Escape no longer leaves the rack. Participants find each control themselves; the white button for gym actions stays. Reload the page to start a side over.
+
 ## Run it
 
 [mise](https://mise.jdx.dev) installs Node and pnpm and runs every task.

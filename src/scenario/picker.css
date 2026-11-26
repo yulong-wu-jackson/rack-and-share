@@ -253,6 +253,24 @@
   color: var(--text-soft);
 }
 
+/* A quiet way in for moderators; participants never see the picker in a study session. */
+.picker-study {
+  margin-top: 6px;
+  font-size: 13px;
+  text-align: center;
+  color: var(--text-soft);
+}
+
+.picker-study a {
+  color: var(--sky);
+  font-weight: 600;
+  text-underline-offset: 3px;
+}
+
+.picker-study a:hover {
+  color: var(--white);
+}
+
 /* The avatar uses the figure's strokes, in the person's colour. */
 .avatar {
   overflow: visible;

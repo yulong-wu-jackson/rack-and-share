@@ -18,6 +18,7 @@ import {
   ownSession,
   type Persona,
   phoneScreen,
+  STUDY,
   useApp,
 } from '../state/store';
 import { flyPhoneToStation } from './phoneTap';
@@ -87,9 +88,12 @@ export function currentPrompt(state: AppState): Prompt {
   const playing =
     state.role !== null && state.view === 'rack' && state.rackId === state.scenarioRack;
   if (!playing || !state.role) return freePrompt(state);
-  if (scenarioDone(state))
-    return { headline: SCENARIOS[state.role].outcome, action: null, cue: null };
-  return SCENARIOS[state.role].prompt(state);
+  // Study mode keeps the gym action button but drops the coaching line, its ring and the outcome.
+  if (scenarioDone(state)) {
+    return { headline: STUDY ? '' : SCENARIOS[state.role].outcome, action: null, cue: null };
+  }
+  const prompt = SCENARIOS[state.role].prompt(state);
+  return STUDY ? { headline: '', action: prompt.action, cue: null } : prompt;
 }
 
 function other(who: Persona): Persona {
@@ -108,28 +112,32 @@ function RoleBar({ role }: { role: Persona }): ReactElement {
         <p className="role-name">
           You’re <strong>{SCENARIOS[role].name}</strong>
         </p>
-        <button
-          type="button"
-          className="role-switch"
-          onClick={() =>
-            actions.startScenario(other(role), useApp.getState().scenarioRack ?? undefined)
-          }
-        >
-          Switch
-        </button>
+        {!STUDY && (
+          <button
+            type="button"
+            className="role-switch"
+            onClick={() =>
+              actions.startScenario(other(role), useApp.getState().scenarioRack ?? undefined)
+            }
+          >
+            Switch
+          </button>
+        )}
       </div>
-      <ol
-        className="role-steps"
-        aria-label={done ? 'All steps done' : `Step ${step + 1} of ${steps.length}`}
-      >
-        {steps.map((item, index) => (
-          <li
-            key={item.label}
-            title={item.label}
-            data-state={index < step ? 'done' : index === step ? 'current' : 'todo'}
-          />
-        ))}
-      </ol>
+      {!STUDY && (
+        <ol
+          className="role-steps"
+          aria-label={done ? 'All steps done' : `Step ${step + 1} of ${steps.length}`}
+        >
+          {steps.map((item, index) => (
+            <li
+              key={item.label}
+              title={item.label}
+              data-state={index < step ? 'done' : index === step ? 'current' : 'todo'}
+            />
+          ))}
+        </ol>
+      )}
     </div>
   );
 }
@@ -194,7 +202,7 @@ export function Narration(): ReactElement {
           {action.label}
         </button>
       )}
-      {role && done && <Finished role={role} />}
+      {role && done && !STUDY && <Finished role={role} />}
     </div>
   );
 }
