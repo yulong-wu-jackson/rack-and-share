@@ -183,3 +183,18 @@
 .figure-maya {
   color: var(--maya);
 }
+
+.figure-name {
+  fill: currentColor;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 800;
+  paint-order: stroke;
+  stroke: var(--night);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+
+.figure-you {
+  fill: var(--sky);
+}

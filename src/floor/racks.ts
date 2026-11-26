@@ -4,6 +4,7 @@ import {
   GUEST_DEFAULT_TAGS,
   MAX_WAITERS,
   minutesLeft,
+  NO_WORK_IN,
   type Rack,
   type RackStatus,
   rackStatus,
@@ -49,6 +50,7 @@ function seedRack({ tags, setsLeft, lifting, guest, waiters = [] }: Seed): Rack 
     session: guest ? { by: 'guest', setsLeft, lifting, tags } : { by: 'phone', setsLeft, lifting },
     waiters: waiters.map((status, index) => ({ id: index + 1, status })),
     nextWaiterId: waiters.length + 1,
+    workIn: NO_WORK_IN,
   };
 }
 

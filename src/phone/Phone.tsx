@@ -4,6 +4,7 @@ import './phone.css';
 import { Ready } from './Ready';
 import { Session } from './Session';
 import { Setup } from './Setup';
+import { Waiting } from './Waiting';
 
 /** The lifter's phone: their tags, their plan, and requests that reach them at a rest. */
 export function Phone(): ReactElement {
@@ -14,6 +15,7 @@ export function Phone(): ReactElement {
       {screen === 'setup' && <Setup />}
       {screen === 'ready' && <Ready />}
       {screen === 'session' && <Session />}
+      {screen === 'waiting' && <Waiting />}
     </div>
   );
 }

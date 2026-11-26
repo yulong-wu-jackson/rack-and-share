@@ -39,6 +39,7 @@ export function Session(): ReactElement | null {
   const draftSets = useApp((state) => state.draftSets);
   const asked = useApp((state) => pendingRequest(state.rack) !== null);
   const rackId = useApp((state) => state.rackId);
+  const sharing = useApp((state) => state.rack.workIn.lifting);
   if (!session) return null;
   const { setsLeft, lifting } = session;
   const displayedSets = draftSets ?? setsLeft;
@@ -49,7 +50,7 @@ export function Session(): ReactElement | null {
       <header className="phone-head">
         <h2 className="phone-title">Rack {rackId}</h2>
         <span className="phone-state" data-lifting={lifting || undefined}>
-          {lifting ? 'Mid-set' : 'Resting'}
+          {lifting ? 'Mid-set' : sharing ? 'Sharing' : 'Resting'}
         </span>
       </header>
 

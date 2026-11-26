@@ -25,14 +25,37 @@ const SCREEN_CENTRE = {
   y: SCREEN.y + SCREEN.height / 2,
 };
 
+const NAMES: Record<Persona, string> = { marcus: 'Marcus', maya: 'Maya' };
+
+/** A name over the head, and a "you" tag on the person the viewer plays. */
+function NameTag({
+  who,
+  shape,
+  you,
+}: {
+  who: Persona;
+  shape: FigureShape;
+  you: boolean;
+}): ReactElement {
+  const top = Math.min(shape.head.y - shape.head.r, shape.bun ? shape.bun.y - shape.bun.r : 0);
+  return (
+    <text className="figure-name" x="0" y={top - 9} textAnchor="middle">
+      {NAMES[who]}
+      {you && <tspan className="figure-you"> · you</tspan>}
+    </text>
+  );
+}
+
 function Figure({
   who,
   actor,
   shape,
+  label,
 }: {
   who: Persona;
   actor: Actor;
   shape: FigureShape;
+  label: 'name' | 'you' | null;
 }): ReactElement {
   return (
     <g
@@ -53,6 +76,7 @@ function Figure({
         <circle className="figure-fill" cx={shape.bun.x} cy={shape.bun.y} r={shape.bun.r} />
       )}
       <circle className="figure-fill" cx={shape.head.x} cy={shape.head.y} r={shape.head.r} />
+      {label && <NameTag who={who} shape={shape} you={label === 'you'} />}
     </g>
   );
 }
@@ -98,6 +122,11 @@ export function Scene(): ReactElement {
   const gaze = useApp((state) => state.gaze);
   const sensorPulse = useApp((state) => state.sensorPulse);
   const nfcPulse = useApp((state) => state.nfcPulse);
+  // People are named in the story and in a scenario. On other racks they are strangers.
+  const role = useApp((state) => (state.rackId === state.scenarioRack ? state.role : null));
+  const named = useApp((state) => state.mode === 'watch') || role !== null;
+  const label = (who: Persona): 'name' | 'you' | null =>
+    !named ? null : who === role ? 'you' : 'name';
 
   const shapes: Record<Persona, FigureShape> = {
     marcus: figureShape(BUILDS.marcus, frame.actors.marcus.pose),
@@ -221,8 +250,13 @@ export function Scene(): ReactElement {
           y2={SCREEN_CENTRE.y}
         />
 
-        <Figure who="marcus" actor={frame.actors.marcus} shape={shapes.marcus} />
-        <Figure who="maya" actor={frame.actors.maya} shape={shapes.maya} />
+        <Figure
+          who="marcus"
+          actor={frame.actors.marcus}
+          shape={shapes.marcus}
+          label={label('marcus')}
+        />
+        <Figure who="maya" actor={frame.actors.maya} shape={shapes.maya} label={label('maya')} />
       </g>
     </svg>
   );

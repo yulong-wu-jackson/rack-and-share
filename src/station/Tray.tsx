@@ -12,6 +12,7 @@ import {
   X,
 } from 'lucide-react';
 import type { ReactElement } from 'react';
+import { mayaInLine } from '../scenario/scenarios';
 import {
   activeTags,
   MAX_WAITERS,
@@ -20,7 +21,7 @@ import {
   timeLine,
   type WaitStatus,
 } from '../state/model';
-import { actions } from '../state/store';
+import { actions, useApp } from '../state/store';
 
 const WAIT_LABEL: Record<WaitStatus, string> = {
   asked: 'Asked to work in',
@@ -115,6 +116,8 @@ function TrayLink({
 export function Tray({ rack }: { rack: Rack }): ReactElement {
   const { session, waiters } = rack;
   const guest = session?.by === 'guest';
+  // Playing Maya, she already has her place once she is in line.
+  const inLine = useApp((state) => state.role === 'maya' && mayaInLine(state) !== null);
   return (
     <section className="tray">
       {session ? (
@@ -132,11 +135,11 @@ export function Tray({ rack }: { rack: Rack }): ReactElement {
               type="button"
               className="button button-ink"
               data-touch="wait-open"
-              disabled={waiters.length >= MAX_WAITERS}
+              disabled={inLine || waiters.length >= MAX_WAITERS}
               onClick={() => actions.openSheet('wait')}
             >
               <Hourglass aria-hidden="true" />
-              I'm waiting
+              {inLine ? 'You’re in line' : 'I’m waiting'}
             </button>
             <WaiterChips rack={rack} />
           </div>
